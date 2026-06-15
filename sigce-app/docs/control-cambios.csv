@@ -1,0 +1,8 @@
+Versión;Fecha;Autor;Descripción del Cambio;Módulo Afectado;Tipo de Cambio;Estado
+1.0.0;2026-06-14;Nicolas Guajardo / Alanis Verdugo;Versión inicial del prototipo funcional SIGCE. Implementación completa de frontend React, backend Express, modulo offline IndexedDB, sincronización automática,tres tipos de check-in (vehículo, menor, mascota), panel oficial con acciones aceptar/rechazar/revisar.;Todos;Creación;Completado
+1.0.1;2026-06-14;Nicolas Guajardo;Corrección: Se ajusta flujo offline para que acciones de oficiales se encolen y sincronicen al recuperar conexión.;services/syncService.js, services/offlineDb.js;Corrección;Completado
+1.0.2;2026-06-14;Nicolas Guajardo;Mejora: Se agregan estadísticas en panel oficial (cards con conteo por estado) y filtros por estado.;pages/OfficialPanel.jsx, App.css;Evolutivo;Completado
+1.0.3;2026-06-14;Nicolas Guajardo;Mejora: Se agrega conexión automática de sync al detectar evento online del navegador.;services/syncService.js;Evolutivo;Completado
+1.0.4;2026-06-14;Nicolas Guajardo;Corrección: Se mejora merge de datos locales vs servidor para evitar duplicados.;pages/TravelerDashboard.jsx, pages/OfficialPanel.jsx;Corrección;Completado
+1.0.5;2026-06-14;Nicolas Guajardo;Se agrega información contextual (Acuerdo Chileno-Argentino, requisitos SAG) en formularios de check-in.;pages/TravelerCheckIn.jsx;Evolutivo;Completado
+1.0.6;2026-06-14;Nicolas Guajardo;Se implementa login offline con usuarios por defecto para funcionamiento sin servidor.;pages/Login.jsx;Evolutivo;Completado

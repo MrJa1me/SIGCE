@@ -1,0 +1,84 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --primary: #003366;
+  --primary-light: #004080;
+  --primary-dark: #002244;
+  --accent: #C8A020;
+  --accent-light: #E8C040;
+  --success: #28a745;
+  --danger: #dc3545;
+  --warning: #ffc107;
+  --info: #17a2b8;
+  --bg: #f0f2f5;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8f9fa;
+  --text: #1a1a2e;
+  --text-light: #6c757d;
+  --border: #dee2e6;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-hover: 0 4px 20px rgba(0,0,0,0.12);
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --navbar-bg: linear-gradient(135deg, var(--primary-dark), var(--primary));
+  --navbar-text: white;
+  --input-bg: white;
+  --input-text: var(--text);
+  --alert-bg: #f8f9fa;
+  --table-hover: #f0f4ff;
+  --hero-bg: linear-gradient(135deg, #001a33, #003366, #004d99);
+  --badge-bg: #e8f0fe;
+  --badge-text: var(--primary);
+}
+
+/* DARK THEME */
+[data-theme="dark"] {
+  --primary: #4d94ff;
+  --primary-light: #66a3ff;
+  --primary-dark: #1a1a2e;
+  --accent: #ffd700;
+  --accent-light: #ffe44d;
+  --bg: #0d1117;
+  --bg-card: #161b22;
+  --bg-card-hover: #1c2333;
+  --text: #e6edf3;
+  --text-light: #8b949e;
+  --border: #30363d;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3);
+  --shadow-hover: 0 4px 20px rgba(0,0,0,0.4);
+  --navbar-bg: linear-gradient(135deg, #0d1117, #161b22);
+  --navbar-text: #e6edf3;
+  --input-bg: #0d1117;
+  --input-text: #e6edf3;
+  --alert-bg: #161b22;
+  --table-hover: #1c2333;
+  --hero-bg: linear-gradient(135deg, #0d1117, #161b22, #1c2333);
+  --badge-bg: rgba(77, 148, 255, 0.15);
+  --badge-text: #4d94ff;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background 0.3s, color 0.3s;
+}
+
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+code {
+  background: var(--bg-card-hover);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-family: 'Consolas', 'Courier New', monospace;
+  color: var(--text);
+}

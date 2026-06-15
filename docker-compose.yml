@@ -1,0 +1,85 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sigce-db
+    environment:
+      POSTGRES_DB: sigce
+      POSTGRES_USER: sigce
+      POSTGRES_PASSWORD: sigce2026
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigce -d sigce"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  auth:
+    build: ./services/auth
+    container_name: sigce-auth
+    environment:
+      PORT: 3001
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: sigce
+      DB_USER: sigce
+      DB_PASSWORD: sigce2026
+      JWT_SECRET: sigce-jwt-secret-2026
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  checkins:
+    build: ./services/checkins
+    container_name: sigce-checkins
+    environment:
+      PORT: 3002
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: sigce
+      DB_USER: sigce
+      DB_PASSWORD: sigce2026
+    ports:
+      - "3002:3002"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  users:
+    build: ./services/users
+    container_name: sigce-users
+    environment:
+      PORT: 3003
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: sigce
+      DB_USER: sigce
+      DB_PASSWORD: sigce2026
+    ports:
+      - "3003:3003"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  gateway:
+    build: ./services/gateway
+    container_name: sigce-gateway
+    environment:
+      PORT: 3000
+      AUTH_URL: http://auth:3001
+      CHECKINS_URL: http://checkins:3002
+      USERS_URL: http://users:3003
+    ports:
+      - "3000:3000"
+    depends_on:
+      - auth
+      - checkins
+      - users
+
+volumes:
+  pgdata:

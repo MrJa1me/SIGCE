@@ -1,0 +1,62 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "username": "admin",
+      "password": "admin123",
+      "name": "Admin Aduanas",
+      "role": "admin"
+    },
+    {
+      "id": 2,
+      "username": "oficial1",
+      "password": "aduana2026",
+      "name": "MarÃ­a GonzÃ¡lez",
+      "role": "official"
+    },
+    {
+      "id": 3,
+      "username": "oficial2",
+      "password": "aduana2026",
+      "name": "Carlos MuÃ±oz",
+      "role": "official"
+    },
+    {
+      "id": 4,
+      "username": "viajero1",
+      "password": "viajero123",
+      "name": "Juan PÃ©rez",
+      "role": "traveler"
+    },
+    {
+      "id": 5,
+      "username": "viajero2",
+      "password": "viajero123",
+      "name": "Ana Soto",
+      "role": "traveler"
+    }
+  ],
+  "checkins": [
+    {
+      "id": "6eecabb2-a058-4045-910c-c99edae9f7e9",
+      "localId": "ceb98828-51ee-458a-8f52-7897c31e3c09",
+      "userId": null,
+      "userName": "Visitante",
+      "rut": "20.888.868-4",
+      "nationality": "Chilena",
+      "email": "correo@ejemplo.com",
+      "phone": "+56991879884",
+      "checkinType": "general",
+      "borderCrossing": "los-libertadores",
+      "status": "in_review",
+      "details": {},
+      "createdAt": "2026-06-15T01:09:53.600Z",
+      "syncedAt": "2026-06-15T01:09:53.600Z",
+      "processedAt": "2026-06-15T01:10:39.284Z",
+      "processedBy": "MarÃ­a GonzÃ¡lez",
+      "version": 2,
+      "notificationSent": false,
+      "comment": "peruana"
+    }
+  ]
+}

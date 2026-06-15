@@ -1,0 +1,88 @@
+const API_URL = 'http://localhost:3000/api';
+
+// Map snake_case from API to camelCase for frontend
+function mapCheckin(c) {
+  if (!c) return c;
+  // Handle arrays
+  if (Array.isArray(c)) return c.map(mapCheckin);
+  // Handle objects
+  const mapped = {};
+  for (const [key, value] of Object.entries(c)) {
+    // Convert snake_case to camelCase
+    let camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+    // Special case: 'comments' -> 'comment' (frontend uses singular)
+    if (camelKey === 'comments') camelKey = 'comment';
+    mapped[camelKey] = value;
+  }
+  return mapped;
+}
+
+export async function login(username, password) {
+  const res = await fetch(`${API_URL}/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) throw new Error('Credenciales inválidas');
+  return res.json();
+}
+
+export async function getCheckins(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  const res = await fetch(`${API_URL}/checkins${query ? '?' + query : ''}`);
+  const data = await res.json();
+  return mapCheckin(data);
+}
+
+export async function getPendingCheckins() {
+  const res = await fetch(`${API_URL}/checkins/pending`);
+  const data = await res.json();
+  return mapCheckin(data);
+}
+
+export async function getCheckin(id) {
+  const res = await fetch(`${API_URL}/checkins/${id}`);
+  if (!res.ok) throw new Error('No encontrado');
+  const data = await res.json();
+  return mapCheckin(data);
+}
+
+export async function createCheckin(data) {
+  const res = await fetch(`${API_URL}/checkins`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+export async function batchSync(items) {
+  const res = await fetch(`${API_URL}/checkins/batch`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  return res.json();
+}
+
+export async function updateCheckinStatus(id, status, processedBy, comment) {
+  const res = await fetch(`${API_URL}/checkins/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status, processedBy, comment }),
+  });
+  return res.json();
+}
+
+export async function syncData(localCheckins) {
+  const res = await fetch(`${API_URL}/sync`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ localCheckins }),
+  });
+  const data = await res.json();
+  if (data.serverCheckins) {
+    data.serverCheckins = mapCheckin(data.serverCheckins);
+  }
+  return data;
+}
