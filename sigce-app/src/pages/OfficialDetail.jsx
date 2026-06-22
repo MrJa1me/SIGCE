@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { getLocalCheckins, updateLocalCheckinStatus, queueStatusChange, saveCheckinLocally } from '../services/offlineDb';
-import { getCheckin, updateCheckinStatus } from '../services/api';
+import { getCheckin, updateCheckinStatus, updatePdiReview } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
 
@@ -57,21 +57,25 @@ function OfficialDetail() {
         setActionLoading(false);
         return;
       }
-      // Save PDI review to database
-      const pdiReview = {
-        status,
-        reviewedBy: user.name,
-        reviewedAt: new Date().toISOString(),
-        comment: comment || undefined,
-      };
-      // Update locally
-      const localData = await getLocalCheckins();
-      const localCheckin = localData.find(c => c.localId === id || c.id === id);
-      if (localCheckin) {
-        const updated = { ...localCheckin, pdiReview };
-        await saveCheckinLocally(updated);
+      const pdiReview = { status, reviewedBy: user.name, comment: comment || undefined };
+      // Save to server if online
+      if (online) {
+        try {
+          const result = await updatePdiReview(checkin.id || checkin.localId, pdiReview);
+          setCheckin(prev => ({ ...prev, pdiReview: result.pdi_review }));
+        } catch {
+          throw new Error('Error al conectar con el servidor');
+        }
+      } else {
+        // Save locally as fallback
+        const localData = await getLocalCheckins();
+        const localCheckin = localData.find(c => c.localId === id || c.id === id);
+        if (localCheckin) {
+          const updated = { ...localCheckin, pdiReview };
+          await saveCheckinLocally(updated);
+        }
+        setCheckin(prev => ({ ...prev, pdiReview }));
       }
-      setCheckin(prev => ({ ...prev, pdiReview }));
     } catch (err) {
       alert('Error: ' + err.message);
     }

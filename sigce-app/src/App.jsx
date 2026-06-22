@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import AduanaSelect from './pages/AduanaSelect';
 import AduanaPage from './pages/AduanaPage';
 import TravelerDashboard from './pages/TravelerDashboard';
+import TravelerCheckIn from './pages/TravelerCheckIn';
 import OfficialPanel from './pages/OfficialPanel';
 import OfficialDetail from './pages/OfficialDetail';
 import OfficialNewCheckin from './pages/OfficialNewCheckin';
@@ -70,6 +71,7 @@ function App() {
             <Route path="/" element={<AduanaSelect />} />
             <Route path="/aduana/:id" element={<AduanaPage />} />
             <Route path="/dashboard" element={<TravelerDashboard />} />
+            <Route path="/checkin" element={<TravelerCheckIn />} />
             {/* Rutas protegidas */}
             <Route path="/oficial" element={<ProtectedRoute allowedRole="official"><OfficialPanel /></ProtectedRoute>} />
             <Route path="/oficial/:id" element={<ProtectedRoute allowedRole="official"><OfficialDetail /></ProtectedRoute>} />

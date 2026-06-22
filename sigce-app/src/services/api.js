@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 // Map snake_case from API to camelCase for frontend
 function mapCheckin(c) {
@@ -34,6 +34,13 @@ export async function getCheckins(params = {}) {
   return mapCheckin(data);
 }
 
+export async function getCheckinsByRut(rut) {
+  const res = await fetch(`${API_URL}/checkins/by-rut/${encodeURIComponent(rut)}`);
+  if (!res.ok) throw new Error('Error al obtener trámites');
+  const data = await res.json();
+  return mapCheckin(data);
+}
+
 export async function getPendingCheckins() {
   const res = await fetch(`${API_URL}/checkins/pending`);
   const data = await res.json();
@@ -62,6 +69,16 @@ export async function batchSync(items) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ items }),
   });
+  return res.json();
+}
+
+export async function updatePdiReview(id, review) {
+  const res = await fetch(`${API_URL}/checkins/${id}/pdi`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(review),
+  });
+  if (!res.ok) throw new Error('Error al actualizar revisión PDI');
   return res.json();
 }
 

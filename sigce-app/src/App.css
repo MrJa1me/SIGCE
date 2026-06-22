@@ -635,6 +635,10 @@
 .sync-badge.synced { color: #155724; }
 
 .processed-by, .processed-at { color: var(--text-light); }
+.pdi-badge { font-size: 0.8em; padding: 2px 8px; border-radius: 4px; font-weight: 600; margin-left: 8px; }
+.pdi-badge.pdi-cleared { background: #d4edda; color: #155724; }
+.pdi-badge.pdi-denied { background: #f8d7da; color: #721c24; }
+.pdi-badge.pdi-flagged { background: #fff3cd; color: #856404; }
 .official-comment { color: var(--primary); font-weight: 600; }
 
 /* ========== STATS GRID ========== */

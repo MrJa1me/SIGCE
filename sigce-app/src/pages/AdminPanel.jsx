@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../App';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 const ROLES = {
   admin: { label: '👑 Administrador', color: '#003366' },

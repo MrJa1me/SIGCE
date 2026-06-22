@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS checkins (
   created_at TIMESTAMP DEFAULT NOW(),
   synced_at TIMESTAMP,
   processed_at TIMESTAMP,
-  processed_by VARCHAR(100)
+  processed_by VARCHAR(100),
+  pdi_review JSONB DEFAULT NULL
 );
 
 -- Seed users
@@ -41,3 +42,5 @@ INSERT INTO users (username, password, name, role) VALUES
   ('viajero1', 'viajero123', 'Juan Perez', 'traveler'),
   ('viajero2', 'viajero123', 'Ana Soto', 'traveler')
 ON CONFLICT (username) DO NOTHING;
+
+-- Seed check-ins are managed by the checkins service migration

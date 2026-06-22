@@ -16,6 +16,70 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// ─── Migration / seed on startup ───
+async function runMigrations() {
+  try {
+    // 1. Add pdi_review column if it doesn't exist
+    await pool.query(`
+      ALTER TABLE checkins ADD COLUMN IF NOT EXISTS pdi_review JSONB DEFAULT NULL
+    `);
+    console.log('📦 Migration: pdi_review column OK');
+
+    // 2. Insert seed data if table is empty (no local_id with 'seed-' prefix)
+    const existing = await pool.query(`SELECT COUNT(*) as count FROM checkins WHERE local_id LIKE 'seed-%'`);
+    if (parseInt(existing.rows[0].count) === 0) {
+      const ago = (hours) => new Date(Date.now() - hours * 3600000).toISOString();
+      const pdi = (status, by, comment) => JSON.stringify({ status, reviewedBy: by, comment });
+
+      // [local_id, name, rut, nation, email, phone, type, crossing, status, details|comments, created_hours_ago, processed_hours_ago, processed_by, pdi_review]
+      const seedData = [
+        ['seed-001', 'Carlos Muñoz', '12.345.678-9', 'Chilena', 'carlos@email.com', '+56911111111', 'vehicle', 'pino-hachado', 'accepted', JSON.stringify({patent:'ABCD-11',brand:'Toyota',model:'Corolla',vehicleYear:2023,vehicleType:'particular',maxDays:180}), null, 72, 48, 'Maria Gonzalez', pdi('cleared','Maria Gonzalez','Viajero frecuente, sin antecedentes')],
+        ['seed-002', 'Ana Soto', '23.456.789-0', 'Argentina', 'ana@email.com', '+54911111111', 'vehicle', 'cardenal-samore', 'accepted', JSON.stringify({patent:'BCDE-22',brand:'Ford',model:'Ranger',vehicleYear:2024,vehicleType:'particular',maxDays:180}), null, 48, 24, 'Carlos Munoz', pdi('cleared','Carlos Munoz','Todo en orden')],
+        ['seed-003', 'Pedro Ramirez', '13.579.246-8', 'Chilena', 'pedro@email.com', '+56922222222', 'minor', 'pino-hachado', 'accepted', JSON.stringify({minorName:'Luis Ramirez',minorRut:'Sin RUT',minorAccompaniedBy:'one_parent',hasMinorAuthorization:true}), 'Viajo con mi hijo a visitar familiares', 96, 72, 'Maria Gonzalez', pdi('cleared','Maria Gonzalez','Autorización notarial verificada')],
+        ['seed-004', 'Maria Fernandez', '34.567.890-1', 'Peruana', 'maria@email.com', '+51911111111', 'general', 'santa-rosa', 'accepted', '{}', 'Consulta sobre ingreso de productos artesanales', 120, 96, 'Carlos Munoz', pdi('cleared','Carlos Munoz',null)],
+        ['seed-005', 'Jorge Martinez', '45.678.901-2', 'Boliviana', 'jorge@email.com', '+59111111111', 'vehicle', 'chacalluta', 'rejected', JSON.stringify({patent:'CDEF-33',brand:'Nissan',model:'Frontier',vehicleYear:2022,vehicleType:'particular',maxDays:180}), null, 48, 24, 'Maria Gonzalez', pdi('denied','Maria Gonzalez','Prohibición de ingreso vigente según PDI')],
+        ['seed-006', 'Laura Vargas', '56.789.012-3', 'Chilena', 'laura@email.com', '+56933333333', 'pet', 'los-liberadores', 'rejected', JSON.stringify({petType:'dog',petName:'Max',petBreed:'Labrador',petHasVaccines:false,petHasMicrochip:false}), 'Mi perro no tiene vacunas aún', 72, 48, 'Carlos Munoz', pdi('denied','Carlos Munoz','No cumple requisitos sanitarios SAG')],
+        ['seed-007', 'Roberto Diaz', '67.890.123-4', 'Argentina', 'roberto@email.com', '+54922222222', 'vehicle', 'cristo-redentor', 'accepted', JSON.stringify({patent:'DEFG-44',brand:'Volkswagen',model:'Amarok',vehicleYear:2024,vehicleType:'diplomatic',maxDays:90}), 'Vehículo con placa diplomática CC-123', 144, 120, 'Maria Gonzalez', pdi('cleared','Maria Gonzalez','Vehículo diplomático verificado')],
+        ['seed-008', 'Carmen Flores', '78.901.234-5', 'Peruana', 'carmen@email.com', '+51922222222', 'minor', 'santa-rosa', 'rejected', JSON.stringify({minorName:'Diego Flores',minorRut:'Sin RUT',minorAccompaniedBy:'neither',hasMinorAuthorization:false}), 'Mi sobrino viaja solo a Chile', 24, 12, 'Carlos Munoz', pdi('denied','Carlos Munoz','Menor sin autorización notarial ni acompañante')],
+        ['seed-009', 'Patricio Vega', '89.012.345-6', 'Chilena', 'patricio@email.com', '+56944444444', 'general', 'pino-hachado', 'accepted', '{}', 'Declaración de herramientas de trabajo para reparaciones en Argentina', 168, 144, 'Maria Gonzalez', pdi('cleared','Maria Gonzalez',null)],
+        ['seed-010', 'Daniela Rojas', '90.123.456-7', 'Argentina', 'daniela@email.com', '+54933333333', 'pet', 'cardenal-samore', 'accepted', JSON.stringify({petType:'cat',petName:'Michi',petBreed:'Persa',petHasVaccines:true,petHasMicrochip:true}), 'Gato con todas las vacunas y microchip', 120, 96, 'Carlos Munoz', pdi('cleared','Carlos Munoz',null)],
+        ['seed-011', 'Felipe Soto', '11.111.111-1', 'Chilena', 'felipe@email.com', '+56955555555', 'vehicle', 'los-liberadores', 'pending', JSON.stringify({patent:'EFGH-55',brand:'Mazda',model:'CX-5',vehicleYear:2023,vehicleType:'particular',maxDays:180}), null, 3, null, null, null],
+        ['seed-012', 'Gabriela Torres', '22.222.222-2', 'Peruana', 'gabriela@email.com', '+51933333333', 'minor', 'santa-rosa', 'pending', JSON.stringify({minorName:'Sofia Torres',minorRut:'Sin RUT',minorAccompaniedBy:'both',hasMinorAuthorization:true}), 'Viaje familiar a Chile por turismo', 2, null, null, null],
+        ['seed-013', 'Hector Campos', '33.333.333-3', 'Boliviana', 'hector@email.com', '+59122222222', 'vehicle', 'chacalluta', 'pending', JSON.stringify({patent:'FGHI-66',brand:'Suzuki',model:'Swift',vehicleYear:2022,vehicleType:'particular',maxDays:180}), null, 1, null, null, null],
+        ['seed-014', 'Isabel Cruz', '44.444.444-4', 'Argentina', 'isabel@email.com', '+54944444444', 'pet', 'cristo-redentor', 'pending', JSON.stringify({petType:'dog',petName:'Luna',petBreed:'Golden Retriever',petHasVaccines:true,petHasMicrochip:true}), null, 0.5, null, null, null],
+        ['seed-015', 'Javier Luna', '55.555.555-5', 'Chilena', 'javier@email.com', '+56966666666', 'general', 'pino-hachado', 'pending', '{}', 'Consulta sobre importación temporal de equipos médicos', 0.25, null, null, null],
+        ['seed-016', 'Karen Peña', '66.666.666-6', 'Peruana', 'karen@email.com', '+51944444444', 'minor', 'los-liberadores', 'in_review', JSON.stringify({minorName:'Mateo Peña',minorRut:'Sin RUT',minorAccompaniedBy:'one_parent',hasMinorAuthorization:false}), 'Viajo sola con mi hijo, estoy tramitando la autorización', 5, 1, 'Maria Gonzalez', null],
+        ['seed-017', 'Luis Castro', '77.777.777-7', 'Argentina', 'luis@email.com', '+54955555555', 'vehicle', 'pino-hachado', 'in_review', JSON.stringify({patent:'GHIJ-77',brand:'Chevrolet',model:'Tracker',vehicleYear:2025,vehicleType:'particular',maxDays:180}), 'Vehículo nuevo, patente provisoria', 4, 0.5, 'Carlos Munoz', null],
+        ['seed-018', 'Monica Rios', '88.888.888-8', 'Chilena', 'monica@email.com', '+56977777777', 'pet', 'cardenal-samore', 'accepted', JSON.stringify({petType:'cat',petName:'Simba',petBreed:'Siames',petHasVaccines:true,petHasMicrochip:false}), null, 8, 3, 'Maria Gonzalez', pdi('cleared','Maria Gonzalez',null)],
+        ['seed-019', 'Nicolas Vargas', '99.999.999-9', 'Chilena', 'nico@email.com', '+56988888888', 'vehicle', 'los-liberadores', 'rejected', JSON.stringify({patent:'HIJK-88',brand:'BMW',model:'X5',vehicleYear:2024,vehicleType:'particular',maxDays:180}), 'Vehículo de alta gama', 24, 6, 'Maria Gonzalez', pdi('denied','Maria Gonzalez','Vehículo con reporte de robo en Argentina')],
+        ['seed-020', 'Valentina Morales', '10.101.010-1', 'Argentina', 'vale@email.com', '+54966666666', 'general', 'cristo-redentor', 'pending', '{}', 'Ingreso temporal de equipamiento deportivo para competencia', 0.16, null, null, null],
+      ];
+
+      for (const s of seedData) {
+        const [localId, name, rut, nation, email, phone, type, crossing, status, details, comments, createdH, processedH, processedBy, pdiReview] = s;
+        await pool.query(`
+          INSERT INTO checkins (local_id, user_name, rut, nationality, email, phone, checkin_type,
+            border_crossing, status, details, comments, created_at, processed_at, processed_by, pdi_review)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11,$12,$13,$14,$15::jsonb)
+          ON CONFLICT DO NOTHING
+        `, [
+          localId, name, rut, nation, email, phone, type, crossing, status,
+          details, comments,
+          createdH ? ago(createdH) : new Date().toISOString(),
+          processedH ? ago(processedH) : null,
+          processedBy,
+          pdiReview,
+        ]);
+      }
+      console.log(`📦 Seed: ${seedData.length} check-ins insertados`);
+    } else {
+      console.log('📦 Seed: ya existen datos, saltando');
+    }
+  } catch (err) {
+    console.error('Migration error:', err.message);
+  }
+}
+
 app.get('/health', (req, res) => res.json({ service: 'checkins', status: 'ok' }));
 
 // Get check-ins with filters
@@ -48,6 +112,19 @@ app.get('/api/checkins/pending', async (req, res) => {
   try {
     const result = await pool.query(
       "SELECT * FROM checkins WHERE status IN ('pending', 'in_review') ORDER BY created_at ASC"
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get check-ins by RUT
+app.get('/api/checkins/by-rut/:rut', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM checkins WHERE rut = $1 ORDER BY created_at DESC',
+      [req.params.rut]
     );
     res.json(result.rows);
   } catch (err) {
@@ -140,6 +217,22 @@ app.post('/api/checkins/batch', async (req, res) => {
   }
 });
 
+// Update PDI review
+app.put('/api/checkins/:id/pdi', async (req, res) => {
+  try {
+    const { status, reviewedBy, comment } = req.body;
+    const pdiReview = JSON.stringify({ status, reviewedBy, reviewedAt: new Date().toISOString(), comment });
+    const result = await pool.query(
+      `UPDATE checkins SET pdi_review=$1 WHERE id::text=$2 OR local_id=$2 RETURNING *`,
+      [pdiReview, req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'No encontrado' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Update status
 app.patch('/api/checkins/:id/status', async (req, res) => {
   try {
@@ -218,6 +311,8 @@ app.post('/api/sync', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`📋 Checkins service on :${PORT}`);
+runMigrations().then(() => {
+  app.listen(PORT, () => {
+    console.log(`📋 Checkins service on :${PORT}`);
+  });
 });

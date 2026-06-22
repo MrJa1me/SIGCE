@@ -287,6 +287,12 @@ function OfficialPanel() {
                 {!checkin.synced && <span className="sync-badge pending">📴 Pendiente de sincronización</span>}
                 {checkin.processedBy && <span className="processed-by">👤 {checkin.processedBy}</span>}
                 {checkin.comment && <span className="official-comment">📌 {checkin.comment}</span>}
+                {/* PDI Status */}
+                {checkin.pdiReview?.status && (
+                  <span className={`pdi-badge pdi-${checkin.pdiReview.status}`}>
+                    {checkin.pdiReview.status === 'cleared' ? '✅ PDI: Autorizado' : checkin.pdiReview.status === 'denied' ? '❌ PDI: Denegado' : '⚠️ PDI: Revisión'}
+                  </span>
+                )}
               </div>
             </div>
           ))}
