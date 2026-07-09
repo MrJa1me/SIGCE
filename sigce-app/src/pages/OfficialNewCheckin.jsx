@@ -4,8 +4,9 @@ import { useAuth } from '../App';
 import { BORDER_CROSSINGS, getBorderCrossing } from '../services/borderCrossings';
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
-import { Icon, CheckinTypeIcon } from '../components/icons';
 import CheckinQr from '../components/CheckinQr';
+import DocumentManager from '../components/DocumentManager';
+import { Icon, CheckinTypeIcon } from '../components/icons';
 
 const initForm = {
   fullName: '',
@@ -38,6 +39,7 @@ function OfficialNewCheckin() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [createdCheckin, setCreatedCheckin] = useState(null);
+  const [draftCheckinId] = useState(() => crypto.randomUUID());
 
   const f = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }));
   const c = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.checked }));
@@ -70,7 +72,7 @@ function OfficialNewCheckin() {
     };
 
     const checkinData = {
-      localId: crypto.randomUUID(),
+      localId: draftCheckinId,
       userId: null,
       userName: form.fullName,
       rut: form.rut, nationality: form.nationality, email: form.email, phone: form.phone,
@@ -357,6 +359,12 @@ function OfficialNewCheckin() {
                 />
               </div>
             </div>
+
+            {online && (
+              <div className="form-section">
+                <DocumentManager checkinId={draftCheckinId} embedded title="Documentos del trámite" />
+              </div>
+            )}
 
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={() => navigate('/oficial')}>Cancelar</button>

@@ -69,6 +69,14 @@ function mapDocument(row) {
   };
 }
 
+async function linkDocumentsToCheckin(checkinId, localId) {
+  if (!checkinId || !localId) return;
+  await pool.query(
+    'UPDATE checkin_documents SET checkin_id = $1 WHERE checkin_local_id = $2 AND checkin_id IS NULL',
+    [checkinId, localId]
+  );
+}
+
 // ─── Migration / seed on startup ───
 async function runMigrations() {
   try {
@@ -274,17 +282,18 @@ app.get('/api/checkins/:id/verify', async (req, res) => {
   }
 });
 
-// List documents for a check-in
+// List documents for a check-in (works with draft local_id before trámite is saved)
 app.get('/api/checkins/:id/documents', async (req, res) => {
   try {
     const checkin = await resolveCheckin(req.params.id);
-    if (!checkin) return res.status(404).json({ error: 'Trámite no encontrado' });
+    const localId = checkin?.local_id || req.params.id;
+    const checkinId = checkin?.id || null;
 
     const result = await pool.query(
       `SELECT * FROM checkin_documents
-       WHERE checkin_id = $1 OR checkin_local_id = $2
+       WHERE checkin_local_id = $1 OR ($2::uuid IS NOT NULL AND checkin_id = $2)
        ORDER BY created_at DESC`,
-      [checkin.id, checkin.local_id]
+      [localId, checkinId]
     );
     res.json(result.rows.map(mapDocument));
   } catch (err) {
@@ -292,7 +301,7 @@ app.get('/api/checkins/:id/documents', async (req, res) => {
   }
 });
 
-// Upload document for a check-in
+// Upload document for a check-in (supports draft uploads via local_id only)
 app.post('/api/checkins/:id/documents', (req, res) => {
   upload.single('file')(req, res, async (err) => {
     if (err) {
@@ -304,10 +313,8 @@ app.post('/api/checkins/:id/documents', (req, res) => {
 
     try {
       const checkin = await resolveCheckin(req.params.id);
-      if (!checkin) {
-        fs.unlinkSync(req.file.path);
-        return res.status(404).json({ error: 'Trámite no encontrado' });
-      }
+      const localId = checkin?.local_id || req.params.id;
+      const checkinId = checkin?.id || null;
 
       const result = await pool.query(
         `INSERT INTO checkin_documents
@@ -315,8 +322,8 @@ app.post('/api/checkins/:id/documents', (req, res) => {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [
-          checkin.id,
-          checkin.local_id,
+          checkinId,
+          localId,
           req.file.originalname,
           req.file.filename,
           req.file.mimetype,
@@ -386,7 +393,11 @@ app.post('/api/checkins', async (req, res) => {
         body.comments || '', body.version || 1,
       ]
     );
-    res.status(201).json(result.rows[0]);
+    const created = result.rows[0];
+    if (body.localId) {
+      await linkDocumentsToCheckin(created.id, body.localId);
+    }
+    res.status(201).json(created);
   } catch (err) {
     console.error('Error creating checkin:', err.message);
     res.status(500).json({ error: err.message });
@@ -417,6 +428,7 @@ app.post('/api/checkins/batch', async (req, res) => {
           ]
         );
         synced.push(result.rows[0]);
+        await linkDocumentsToCheckin(result.rows[0].id, item.localId);
       } else {
         const result = await pool.query(
           `INSERT INTO checkins (local_id, user_name, rut, nationality, email, phone,
@@ -430,6 +442,7 @@ app.post('/api/checkins/batch', async (req, res) => {
           ]
         );
         synced.push(result.rows[0]);
+        await linkDocumentsToCheckin(result.rows[0].id, item.localId);
       }
     }
 
@@ -523,6 +536,7 @@ app.post('/api/sync', async (req, res) => {
           ]
         );
         results.push({ localId: local.localId, status: 'created', serverId: created.rows[0].id });
+        await linkDocumentsToCheckin(created.rows[0].id, local.localId);
       }
     }
 

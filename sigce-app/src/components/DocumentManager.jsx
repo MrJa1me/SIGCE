@@ -121,7 +121,13 @@ function DocumentViewer({ doc, onClose }) {
   );
 }
 
-function DocumentManager({ checkinId, canUpload = true, title = 'Documentos adjuntos' }) {
+function DocumentManager({
+  checkinId,
+  canUpload = true,
+  title = 'Documentos del trámite',
+  hint = 'Adjunta cédula, autorizaciones, permisos u otros documentos requeridos antes de enviar el trámite (PDF, JPG o PNG, máx. 5 MB).',
+  embedded = false,
+}) {
   const { user, online } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -176,11 +182,9 @@ function DocumentManager({ checkinId, canUpload = true, title = 'Documentos adju
 
   return (
     <>
-      <div className="documents-section">
+      <div className={`documents-section${embedded ? ' documents-section-embedded' : ''}`}>
         <h3 className="documents-title">{title}</h3>
-        <p className="documents-hint">
-          Adjunta cédula, autorizaciones, permisos u otros documentos requeridos (PDF, JPG o PNG, máx. 5 MB).
-        </p>
+        <p className="documents-hint">{hint}</p>
 
         {error && <div className="alert alert-error">{error}</div>}
         {!online && (

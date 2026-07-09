@@ -5,6 +5,7 @@ import { createCheckin } from '../services/api';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
 import StatusBadge from '../components/StatusBadge';
 import CheckinQr from '../components/CheckinQr';
+import DocumentManager from '../components/DocumentManager';
 import { Icon, CheckinTypeIcon, checkinTypeLabel, checkinTypeTitle } from '../components/icons';
 
 const buildInitialForm = (user) => ({
@@ -40,6 +41,13 @@ function TravelerCheckIn() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState('');
+  const [draftCheckinId, setDraftCheckinId] = useState(null);
+
+  const startStep2 = (type) => {
+    setDraftCheckinId(crypto.randomUUID());
+    setForm((prev) => ({ ...prev, checkinType: type }));
+    setStep(2);
+  };
 
   const updateField = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -75,7 +83,7 @@ function TravelerCheckIn() {
     }
 
     const checkinData = {
-      localId: crypto.randomUUID(),
+      localId: draftCheckinId || crypto.randomUUID(),
       userId: user?.id || null,
       userName: form.fullName || user?.name || 'Visitante',
       rut: form.rut || user?.rut || '',
@@ -115,6 +123,7 @@ function TravelerCheckIn() {
 
   const resetForm = () => {
     setStep(1);
+    setDraftCheckinId(null);
     setConfirmation(null);
     setForm(buildInitialForm(user));
   };
@@ -143,22 +152,22 @@ function TravelerCheckIn() {
           <h2>Check-In Anticipado</h2>
           <p className="card-subtitle">Selecciona el tipo de trámite que deseas realizar antes de llegar a la aduana</p>
           <div className="type-grid">
-            <button className="type-card vehicle" onClick={() => { updateField('checkinType', 'vehicle'); setStep(2); }}>
+            <button className="type-card vehicle" onClick={() => startStep2('vehicle')}>
               <span className="type-icon"><CheckinTypeIcon type="vehicle" size="lg" /></span>
               <span className="type-label">Vehículo</span>
               <span className="type-desc">Salida/entrada temporal de vehículo particular o diplomático</span>
             </button>
-            <button className="type-card minor" onClick={() => { updateField('checkinType', 'minor'); setStep(2); }}>
+            <button className="type-card minor" onClick={() => startStep2('minor')}>
               <span className="type-icon"><CheckinTypeIcon type="minor" size="lg" /></span>
               <span className="type-label">Menor de Edad</span>
               <span className="type-desc">Autorización para viaje de menores con o sin compañía</span>
             </button>
-            <button className="type-card pet" onClick={() => { updateField('checkinType', 'pet'); setStep(2); }}>
+            <button className="type-card pet" onClick={() => startStep2('pet')}>
               <span className="type-icon"><CheckinTypeIcon type="pet" size="lg" /></span>
               <span className="type-label">Mascota</span>
               <span className="type-desc">Declaración jurada SAG para ingreso con mascotas</span>
             </button>
-            <button className="type-card general" onClick={() => { updateField('checkinType', 'general'); setStep(2); }}>
+            <button className="type-card general" onClick={() => startStep2('general')}>
               <span className="type-icon"><CheckinTypeIcon type="general" size="lg" /></span>
               <span className="type-label">Trámite General</span>
               <span className="type-desc">Otros trámites aduaneros o consultas generales</span>
@@ -169,7 +178,7 @@ function TravelerCheckIn() {
 
       {step === 2 && (
         <div className="card checkin-form">
-          <button className="btn-back" onClick={() => setStep(1)}>← Volver</button>
+          <button className="btn-back" onClick={() => { setStep(1); setDraftCheckinId(null); }}>← Volver</button>
           <h2 className="page-title-with-icon">
             <CheckinTypeIcon type={form.checkinType} size="md" />
             {checkinTypeTitle(form.checkinType).replace('Trámite ', 'Check-In ')}
@@ -367,8 +376,20 @@ function TravelerCheckIn() {
               </div>
             </div>
 
+            {draftCheckinId && (
+              <div className="form-section">
+                {online ? (
+                  <DocumentManager checkinId={draftCheckinId} embedded title="Documentos del trámite" />
+                ) : (
+                  <div className="alert alert-warning">
+                    Sin conexión — necesitas internet para adjuntar documentos antes de enviar.
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="form-actions">
-              <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Cancelar</button>
+              <button type="button" className="btn btn-secondary" onClick={() => { setStep(1); setDraftCheckinId(null); }}>Cancelar</button>
               <button type="submit" className="btn btn-primary" disabled={submitting}>
                 {submitting ? 'Guardando...' : 'Realizar Check-In Anticipado'}
               </button>

@@ -604,6 +604,21 @@
   border-top: 1px solid var(--border);
 }
 
+.documents-section-embedded {
+  margin-top: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+
+.confirmation-docs-note {
+  text-align: center;
+  color: var(--text-light);
+  font-size: 0.9em;
+  margin: 12px 0 0;
+}
+
 .documents-section h3,
 .documents-title {
   margin-bottom: 8px;

@@ -165,7 +165,8 @@ function TravelerDashboard() {
                 {online && (
                   <DocumentManager
                     checkinId={checkin.localId || checkin.id}
-                    title="Documentos"
+                    title="Documentos adicionales"
+                    hint="Si necesitas agregar más archivos después del envío, puedes hacerlo aquí."
                   />
                 )}
               </div>

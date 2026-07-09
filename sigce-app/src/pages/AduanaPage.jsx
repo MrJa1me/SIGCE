@@ -49,6 +49,7 @@ function AduanaPage() {
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState('');
+  const [draftCheckinId, setDraftCheckinId] = useState(null);
 
   if (!aduana) {
     return (
@@ -69,6 +70,7 @@ function AduanaPage() {
 
   const selectType = (type) => {
     setCheckinType(type);
+    setDraftCheckinId(crypto.randomUUID());
     setForm({ ...buildInitialForm(user), checkinType: type });
     setStep('form');
   };
@@ -102,7 +104,7 @@ function AduanaPage() {
     }
 
     const checkinData = {
-      localId: crypto.randomUUID(),
+      localId: draftCheckinId || crypto.randomUUID(),
       userId: user?.id || null,
       userName: form.fullName || user?.name || 'Visitante',
       rut: form.rut || user?.rut || '',
@@ -147,6 +149,7 @@ function AduanaPage() {
   const resetForm = () => {
     setStep('select');
     setCheckinType('');
+    setDraftCheckinId(null);
     setConfirmation(null);
     setForm(buildInitialForm(user));
   };
@@ -415,6 +418,22 @@ function AduanaPage() {
                 </div>
               </div>
 
+              {draftCheckinId && (
+                <div className="form-section">
+                  {online ? (
+                    <DocumentManager
+                      checkinId={draftCheckinId}
+                      embedded
+                      title="Documentos del trámite"
+                    />
+                  ) : (
+                    <div className="alert alert-warning">
+                      Sin conexión — podrás adjuntar documentos cuando tengas internet, antes de enviar el trámite.
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setStep('select')}>Cancelar</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting} style={{ background: aduana.color }}>
@@ -469,11 +488,11 @@ function AduanaPage() {
               </div>
             </div>
 
-            <DocumentManager
-              checkinId={confirmation.localId || confirmation.id}
-              canUpload={online}
-              title="Adjuntar documentos"
-            />
+            {confirmation.synced && (
+              <p className="confirmation-docs-note">
+                Los documentos adjuntos quedaron vinculados a este trámite.
+              </p>
+            )}
 
             <div className="form-actions" style={{ justifyContent: 'center' }}>
               <button className="btn btn-primary" onClick={resetForm} style={{ background: aduana.color }}>
