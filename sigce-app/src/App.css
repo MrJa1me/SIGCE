@@ -559,6 +559,134 @@
   font-style: italic;
 }
 
+/* Document viewer overlay */
+.doc-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: docViewerFadeIn 0.2s ease;
+}
+
+@keyframes docViewerFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.doc-viewer-panel {
+  background: var(--bg-card);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.4);
+  width: 100%;
+  max-width: 900px;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: docViewerSlideIn 0.2s ease;
+}
+
+@keyframes docViewerSlideIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.doc-viewer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.doc-viewer-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.doc-viewer-title strong {
+  display: block;
+  font-size: 0.95em;
+}
+
+.doc-viewer-filename {
+  display: block;
+  font-size: 0.8em;
+  color: var(--text-light);
+  word-break: break-all;
+}
+
+.doc-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.doc-viewer-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 1.1em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.doc-viewer-close:hover {
+  background: var(--border);
+}
+
+.doc-viewer-content {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: #1a1a1a;
+  min-height: 200px;
+}
+
+.doc-viewer-image {
+  max-width: 100%;
+  max-height: calc(92vh - 80px);
+  object-fit: contain;
+  border-radius: 4px;
+}
+
+.doc-viewer-pdf {
+  width: 100%;
+  height: calc(92vh - 80px);
+  min-height: 400px;
+  border: none;
+  border-radius: 4px;
+  background: white;
+}
+
+.doc-viewer-fallback {
+  text-align: center;
+  color: #ccc;
+  padding: 32px;
+}
+
+.doc-viewer-fallback p {
+  margin-bottom: 16px;
+}
+
 /* ========== FORMS ========== */
 .form-group {
   margin-bottom: 16px;
