@@ -1,9 +1,14 @@
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const { randomUUID } = require('crypto');
 const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+const UPLOAD_DIR = process.env.UPLOAD_DIR || path.join(__dirname, 'uploads');
 
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -13,17 +18,121 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'sigce2026',
 });
 
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+
+const ALLOWED_MIME = {
+  'application/pdf': '.pdf',
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+};
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+    filename: (_req, file, cb) => {
+      const ext = ALLOWED_MIME[file.mimetype] || path.extname(file.originalname).toLowerCase() || '';
+      cb(null, `${randomUUID()}${ext}`);
+    },
+  }),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_MIME[file.mimetype]) cb(null, true);
+    else cb(new Error('Tipo no permitido. Usa PDF, JPG o PNG.'));
+  },
+});
+
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
+
+async function resolveCheckin(id) {
+  const result = await pool.query(
+    'SELECT id, local_id FROM checkins WHERE id::text = $1 OR local_id = $1',
+    [id]
+  );
+  return result.rows[0] || null;
+}
+
+function mapDocument(row) {
+  return {
+    id: row.id,
+    checkinId: row.checkin_id,
+    checkinLocalId: row.checkin_local_id,
+    originalName: row.original_name,
+    mimeType: row.mime_type,
+    sizeBytes: row.size_bytes,
+    label: row.label,
+    uploadedBy: row.uploaded_by,
+    createdAt: row.created_at,
+  };
+}
 
 // ─── Migration / seed on startup ───
 async function runMigrations() {
   try {
-    // 1. Add pdi_review column if it doesn't exist
+    await pool.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        password VARCHAR(100) NOT NULL,
+        name VARCHAR(100) NOT NULL,
+        role VARCHAR(20) NOT NULL DEFAULT 'traveler',
+        rut VARCHAR(50),
+        email VARCHAR(100),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS checkins (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        local_id VARCHAR(100),
+        user_id INTEGER REFERENCES users(id),
+        user_name VARCHAR(100) NOT NULL,
+        rut VARCHAR(50),
+        nationality VARCHAR(50) DEFAULT 'Chilena',
+        email VARCHAR(100),
+        phone VARCHAR(50),
+        checkin_type VARCHAR(20) NOT NULL,
+        border_crossing VARCHAR(50),
+        source VARCHAR(20) DEFAULT 'online',
+        created_by VARCHAR(100),
+        status VARCHAR(20) DEFAULT 'pending',
+        details JSONB DEFAULT '{}',
+        comments TEXT,
+        version INTEGER DEFAULT 1,
+        notification_sent BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        synced_at TIMESTAMP,
+        processed_at TIMESTAMP,
+        processed_by VARCHAR(100),
+        pdi_review JSONB DEFAULT NULL
+      )
+    `);
+
     await pool.query(`
       ALTER TABLE checkins ADD COLUMN IF NOT EXISTS pdi_review JSONB DEFAULT NULL
     `);
-    console.log('📦 Migration: pdi_review column OK');
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS checkin_documents (
+        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+        checkin_id UUID REFERENCES checkins(id) ON DELETE CASCADE,
+        checkin_local_id VARCHAR(100),
+        original_name VARCHAR(255) NOT NULL,
+        stored_name VARCHAR(255) NOT NULL UNIQUE,
+        mime_type VARCHAR(100) NOT NULL,
+        size_bytes INTEGER NOT NULL,
+        label VARCHAR(100),
+        uploaded_by VARCHAR(100),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('📦 Migration: schema + documents table OK');
 
     // 2. Insert seed data if table is empty (no local_id with 'seed-' prefix)
     const existing = await pool.query(`SELECT COUNT(*) as count FROM checkins WHERE local_id LIKE 'seed-%'`);
@@ -127,6 +236,86 @@ app.get('/api/checkins/by-rut/:rut', async (req, res) => {
       [req.params.rut]
     );
     res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// List documents for a check-in
+app.get('/api/checkins/:id/documents', async (req, res) => {
+  try {
+    const checkin = await resolveCheckin(req.params.id);
+    if (!checkin) return res.status(404).json({ error: 'Trámite no encontrado' });
+
+    const result = await pool.query(
+      `SELECT * FROM checkin_documents
+       WHERE checkin_id = $1 OR checkin_local_id = $2
+       ORDER BY created_at DESC`,
+      [checkin.id, checkin.local_id]
+    );
+    res.json(result.rows.map(mapDocument));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload document for a check-in
+app.post('/api/checkins/:id/documents', (req, res) => {
+  upload.single('file')(req, res, async (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message || 'Error al subir archivo' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'Archivo requerido' });
+    }
+
+    try {
+      const checkin = await resolveCheckin(req.params.id);
+      if (!checkin) {
+        fs.unlinkSync(req.file.path);
+        return res.status(404).json({ error: 'Trámite no encontrado' });
+      }
+
+      const result = await pool.query(
+        `INSERT INTO checkin_documents
+          (checkin_id, checkin_local_id, original_name, stored_name, mime_type, size_bytes, label, uploaded_by)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING *`,
+        [
+          checkin.id,
+          checkin.local_id,
+          req.file.originalname,
+          req.file.filename,
+          req.file.mimetype,
+          req.file.size,
+          req.body.label || null,
+          req.body.uploadedBy || null,
+        ]
+      );
+      res.status(201).json(mapDocument(result.rows[0]));
+    } catch (dbErr) {
+      if (req.file?.path) fs.unlinkSync(req.file.path);
+      console.error('Upload error:', dbErr.message);
+      res.status(500).json({ error: 'Error al guardar documento' });
+    }
+  });
+});
+
+// Download / view document
+app.get('/api/documents/:docId', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM checkin_documents WHERE id = $1', [req.params.docId]);
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Documento no encontrado' });
+
+    const doc = result.rows[0];
+    const filePath = path.join(UPLOAD_DIR, doc.stored_name);
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Archivo no encontrado en el servidor' });
+    }
+
+    res.setHeader('Content-Type', doc.mime_type);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(doc.original_name)}"`);
+    fs.createReadStream(filePath).pipe(res);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

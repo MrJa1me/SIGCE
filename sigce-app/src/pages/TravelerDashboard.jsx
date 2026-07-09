@@ -4,6 +4,7 @@ import { useAuth } from '../App';
 import { getLocalCheckins } from '../services/offlineDb';
 import { getTravelerCheckins } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
+import DocumentManager from '../components/DocumentManager';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
 
 function TravelerDashboard() {
@@ -149,6 +150,13 @@ function TravelerDashboard() {
                 )}
                 {checkin.comments && (
                   <div className="checkin-detail comment">💬 {checkin.comments}</div>
+                )}
+
+                {online && (
+                  <DocumentManager
+                    checkinId={checkin.localId || checkin.id}
+                    title="📎 Documentos"
+                  />
                 )}
               </div>
 

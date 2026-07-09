@@ -150,3 +150,37 @@ export async function syncData(localCheckins) {
   }
   return data;
 }
+
+export function getDocumentUrl(docId) {
+  return `${API_URL}/documents/${docId}`;
+}
+
+export async function getDocuments(checkinId) {
+  const res = await fetch(`${API_URL}/checkins/${encodeURIComponent(checkinId)}/documents`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Error al cargar documentos');
+  }
+  return res.json();
+}
+
+export async function uploadDocument(checkinId, file, { label, uploadedBy } = {}) {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (label) formData.append('label', label);
+  if (uploadedBy) formData.append('uploadedBy', uploadedBy);
+
+  const res = await fetch(`${API_URL}/checkins/${encodeURIComponent(checkinId)}/documents`, {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al subir documento');
+  return data;
+}
+
+export function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

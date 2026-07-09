@@ -43,6 +43,7 @@ app.all('/api/login*', proxy(AUTH_URL));
 app.all('/api/register*', proxy(AUTH_URL));
 app.all('/api/verify*', proxy(AUTH_URL));
 app.all('/api/checkins*', proxy(CHECKINS_URL));
+app.all('/api/documents*', proxy(CHECKINS_URL));
 app.all('/api/sync*', proxy(CHECKINS_URL));
 app.all('/api/users*', proxy(USERS_URL));
 

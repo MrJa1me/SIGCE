@@ -47,6 +47,9 @@ services:
       DB_NAME: sigce
       DB_USER: sigce
       DB_PASSWORD: ${POSTGRES_PASSWORD:-sigce2026}
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - checkin_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -94,6 +97,7 @@ services:
 
 volumes:
   pgdata:
+  checkin_uploads:
 
 networks:
   caddy_net:

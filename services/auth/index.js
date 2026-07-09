@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
+const { initSchema } = require('./initSchema');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -18,28 +19,23 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-async function runMigrations() {
-  try {
-    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS rut VARCHAR(50)');
-    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(100)');
-    console.log('📦 Migration: users profile columns OK');
-  } catch (err) {
-    console.error('Migration error:', err.message);
-  }
+let schemaReady = false;
+
+async function ensureSchema() {
+  if (schemaReady) return;
+  await initSchema(pool);
+  schemaReady = true;
 }
 
-runMigrations();
-
-// Health check
 app.get('/health', (req, res) => res.json({ service: 'auth', status: 'ok' }));
 
-// Login
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
   }
   try {
+    await ensureSchema();
     const result = await pool.query(
       'SELECT id, username, password, name, role, rut, email FROM users WHERE username = $1',
       [username]
@@ -71,7 +67,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Register traveler account (public)
 app.post('/api/register', async (req, res) => {
   const { username, password, name, rut, email } = req.body;
   if (!username || !password || !name) {
@@ -85,6 +80,7 @@ app.post('/api/register', async (req, res) => {
   }
 
   try {
+    await ensureSchema();
     const exists = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
     if (exists.rows.length > 0) {
       return res.status(400).json({ error: 'El nombre de usuario ya existe' });
@@ -124,7 +120,6 @@ app.post('/api/register', async (req, res) => {
   }
 });
 
-// Verify token (used by other services)
 app.post('/api/verify', (req, res) => {
   const { token } = req.body;
   if (!token) return res.status(400).json({ error: 'Token requerido' });
@@ -136,6 +131,16 @@ app.post('/api/verify', (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🔐 Auth service on :${PORT}`);
-});
+async function start() {
+  try {
+    await ensureSchema();
+    app.listen(PORT, () => {
+      console.log(`🔐 Auth service on :${PORT}`);
+    });
+  } catch (err) {
+    console.error('Failed to start auth service:', err.message);
+    process.exit(1);
+  }
+}
+
+start();

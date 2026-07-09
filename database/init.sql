@@ -46,3 +46,16 @@ INSERT INTO users (username, password, name, role) VALUES
 ON CONFLICT (username) DO NOTHING;
 
 -- Seed check-ins are managed by the checkins service migration
+
+CREATE TABLE IF NOT EXISTS checkin_documents (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  checkin_id UUID REFERENCES checkins(id) ON DELETE CASCADE,
+  checkin_local_id VARCHAR(100),
+  original_name VARCHAR(255) NOT NULL,
+  stored_name VARCHAR(255) NOT NULL UNIQUE,
+  mime_type VARCHAR(100) NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  label VARCHAR(100),
+  uploaded_by VARCHAR(100),
+  created_at TIMESTAMP DEFAULT NOW()
+);

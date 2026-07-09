@@ -4,6 +4,7 @@ import { useAuth } from '../App';
 import { getLocalCheckins, updateLocalCheckinStatus, queueStatusChange, saveCheckinLocally } from '../services/offlineDb';
 import { getCheckin, updateCheckinStatus, updatePdiReview } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
+import DocumentManager from '../components/DocumentManager';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
 
 function OfficialDetail() {
@@ -213,6 +214,14 @@ function OfficialDetail() {
             <p>{checkin.comments}</p>
           </div>
         )}
+
+        <div className="detail-section">
+          <DocumentManager
+            checkinId={checkin.localId || checkin.id}
+            canUpload={false}
+            title="📎 Documentos del viajero"
+          />
+        </div>
 
         {/* PDI Review — Official Only */}
         <div className="detail-section pdi-review-section">

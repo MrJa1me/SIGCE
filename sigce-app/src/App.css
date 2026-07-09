@@ -484,6 +484,81 @@
   color: white !important;
 }
 
+/* ========== DOCUMENTS ========== */
+.documents-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.documents-section h3 {
+  margin-bottom: 8px;
+  font-size: 1.05em;
+}
+
+.documents-hint {
+  color: var(--text-light);
+  font-size: 0.85em;
+  margin-bottom: 12px;
+}
+
+.document-upload-form {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+}
+
+.documents-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  background: var(--bg-card);
+}
+
+.document-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.document-icon {
+  font-size: 1.5em;
+  flex-shrink: 0;
+}
+
+.document-info strong {
+  display: block;
+  font-size: 0.95em;
+}
+
+.document-meta {
+  display: block;
+  font-size: 0.8em;
+  color: var(--text-light);
+  word-break: break-all;
+}
+
+.documents-empty,
+.documents-loading {
+  color: var(--text-light);
+  font-size: 0.9em;
+  font-style: italic;
+}
+
 /* ========== FORMS ========== */
 .form-group {
   margin-bottom: 16px;

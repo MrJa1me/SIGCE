@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { BORDER_CROSSINGS, getBorderCrossing } from '../services/borderCrossings';
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
+import DocumentManager from '../components/DocumentManager';
 
 const buildInitialForm = (user) => ({
   fullName: user?.name || '',
@@ -120,11 +121,22 @@ function AduanaPage() {
     };
 
     try {
-      const localSaved = await saveCheckinLocally(checkinData);
+      let saved = await saveCheckinLocally(checkinData);
       if (online) {
-        try { await createCheckin(checkinData); } catch { /* sync later */ }
+        try {
+          const serverCheckin = await createCheckin(checkinData);
+          saved = {
+            ...saved,
+            id: serverCheckin.id || serverCheckin.id,
+            localId: serverCheckin.localId || serverCheckin.local_id || saved.localId,
+            synced: true,
+          };
+          await saveCheckinLocally(saved);
+        } catch {
+          /* sync later */
+        }
       }
-      setConfirmation(localSaved);
+      setConfirmation(saved);
       setStep('confirmation');
       setForm(buildInitialForm(user));
     } catch (err) {
@@ -434,6 +446,12 @@ function AduanaPage() {
                 <span>{confirmation.synced ? '✅ Enviado' : '📴 Pendiente'}</span>
               </div>
             </div>
+
+            <DocumentManager
+              checkinId={confirmation.localId || confirmation.id}
+              canUpload={online}
+              title="📎 Adjuntar documentos"
+            />
 
             <div className="form-actions" style={{ justifyContent: 'center' }}>
               <button className="btn btn-primary" onClick={resetForm} style={{ background: aduana.color }}>
