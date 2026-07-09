@@ -4,48 +4,59 @@ import { useAuth } from '../App';
 import { useTheme } from '../services/themeContext';
 import { Icon, ROLE_LABELS, roleIconName } from './icons';
 
-function Navbar() {
+function Navbar({ variant = 'traveler' }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useTheme();
+  const isStaff = variant === 'staff';
 
   const handleLogout = () => {
+    const role = user?.role;
     logout();
-    navigate('/');
+    if (role === 'official' || role === 'admin') navigate('/portal');
+    else navigate('/');
   };
 
+  const homeLink = isStaff
+    ? (user?.role === 'admin' ? '/admin' : user?.role === 'official' ? '/oficial' : '/portal')
+    : '/';
+
   return (
-    <nav className="navbar">
+    <nav className={`navbar ${isStaff ? 'navbar-staff' : 'navbar-traveler'}`}>
       <div className="navbar-brand">
-        <Link to="/">
+        <Link to={homeLink}>
           <Icon name="logo" size="md" className="navbar-logo-icon" />
-          <span className="navbar-title">SIGCE</span>
+          <span className="navbar-title">{isStaff ? 'SIGCE — Portal Interno' : 'SIGCE'}</span>
         </Link>
       </div>
 
       <div className="navbar-links">
-        <Link to="/pasos" className="nav-link">
-          <Icon name="globe" size="sm" /> Pasos Fronterizos
-        </Link>
-        {user?.role === 'traveler' && (
-          <Link to="/dashboard" className="nav-link">
-            <Icon name="clipboard" size="sm" /> Mis Trámites
-          </Link>
+        {!isStaff && (
+          <>
+            <Link to="/pasos" className="nav-link">
+              <Icon name="globe" size="sm" /> Pasos Fronterizos
+            </Link>
+            {user?.role === 'traveler' && (
+              <Link to="/dashboard" className="nav-link">
+                <Icon name="clipboard" size="sm" /> Mis Trámites
+              </Link>
+            )}
+          </>
         )}
-        {user?.role === 'official' && (
+        {isStaff && user?.role === 'official' && (
           <>
             <Link to="/oficial" className="nav-link">
-              <Icon name="user" size="sm" /> Panel Oficial
+              <Icon name="clipboard" size="sm" /> Panel
             </Link>
             <Link to="/oficial/escanear" className="nav-link">
               <Icon name="qr" size="sm" /> Escanear QR
             </Link>
           </>
         )}
-        {user?.role === 'admin' && (
+        {isStaff && user?.role === 'admin' && (
           <>
             <Link to="/admin" className="nav-link">
-              <Icon name="admin" size="sm" /> Admin
+              <Icon name="admin" size="sm" /> Administración
             </Link>
             <Link to="/oficial" className="nav-link">
               <Icon name="user" size="sm" /> Panel Oficial
@@ -71,16 +82,24 @@ function Navbar() {
               <span className="user-name">{user.name}</span>
               <span className={`user-role ${user.role}`}>{ROLE_LABELS[user.role]}</span>
             </span>
-            <button onClick={handleLogout} className="btn-logout">Salir</button>
+            <button type="button" onClick={handleLogout} className="btn-logout">Salir</button>
           </>
         ) : (
           <div className="navbar-guest-actions">
-            <Link to="/viajero" className="btn-login-small">
-              <Icon name="traveler" size="sm" /> Viajeros
-            </Link>
-            <Link to="/login" className="btn-login-small btn-login-staff">
-              <Icon name="user" size="sm" /> Funcionarios
-            </Link>
+            {!isStaff ? (
+              <>
+                <Link to="/viajero/ingreso" className="btn-login-small">
+                  <Icon name="traveler" size="sm" /> Ingresar
+                </Link>
+                <Link to="/viajero/registro" className="btn-login-small btn-login-register">
+                  Registrarse
+                </Link>
+              </>
+            ) : (
+              <Link to="/" className="btn-login-small">
+                <Icon name="globe" size="sm" /> Sitio viajeros
+              </Link>
+            )}
           </div>
         )}
       </div>

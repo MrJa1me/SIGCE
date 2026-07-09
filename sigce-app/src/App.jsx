@@ -1,10 +1,10 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import RoleSelect from './pages/RoleSelect';
+import StaffPortal from './pages/StaffPortal';
 import TravelerHome from './pages/TravelerHome';
 import TravelerLogin from './pages/TravelerLogin';
 import TravelerRegister from './pages/TravelerRegister';
-import Login from './pages/Login';
 import AduanaSelect from './pages/AduanaSelect';
 import AduanaPage from './pages/AduanaPage';
 import TravelerDashboard from './pages/TravelerDashboard';
@@ -15,8 +15,7 @@ import OfficialNewCheckin from './pages/OfficialNewCheckin';
 import OfficialQrScan from './pages/OfficialQrScan';
 import OfficialVerify from './pages/OfficialVerify';
 import AdminPanel from './pages/AdminPanel';
-import Navbar from './components/Navbar';
-import ConnectionStatus from './components/ConnectionStatus';
+import AppShell from './components/AppShell';
 import { startPeriodicSync, stopPeriodicSync, isOnline, onNetworkChange } from './services/syncService';
 import './App.css';
 
@@ -58,7 +57,7 @@ function App() {
   const ProtectedRoute = ({ children, allowedRole }) => {
     if (!user) {
       if (allowedRole === 'traveler') return <Navigate to="/viajero/ingreso" replace />;
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/portal" replace />;
     }
     if (allowedRole && user.role !== allowedRole) {
       if (allowedRole === 'official' && user.role === 'admin') return children;
@@ -70,13 +69,7 @@ function App() {
     return children;
   };
 
-  const StaffLoginRoute = () => {
-    if (!user) return <Login />;
-    if (user.role === 'admin') return <Navigate to="/admin" replace />;
-    if (user.role === 'official') return <Navigate to="/oficial" replace />;
-    if (user.role === 'traveler') return <Navigate to="/pasos" replace />;
-    return <Navigate to="/" replace />;
-  };
+  const StaffPortalRoute = () => <StaffPortal />;
 
   const TravelerLoginRoute = () => {
     if (user?.role === 'traveler') return <Navigate to="/pasos" replace />;
@@ -89,31 +82,28 @@ function App() {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, online }}>
-      <div className="app">
-        <Navbar />
-        <ConnectionStatus online={online} syncStatus={syncStatus} />
-        <main className="main-content">
-          <Routes>
-            <Route path="/" element={<RoleSelect />} />
-            <Route path="/viajero" element={<TravelerHome />} />
-            <Route path="/viajero/ingreso" element={<TravelerLoginRoute />} />
-            <Route path="/viajero/registro" element={<TravelerRegisterRoute />} />
-            <Route path="/login" element={<StaffLoginRoute />} />
-            <Route path="/pasos" element={<AduanaSelect />} />
-            <Route path="/aduana/:id" element={<AduanaPage />} />
-            <Route path="/dashboard" element={<ProtectedRoute allowedRole="traveler"><TravelerDashboard /></ProtectedRoute>} />
-            <Route path="/checkin" element={<ProtectedRoute allowedRole="traveler"><TravelerCheckIn /></ProtectedRoute>} />
-            <Route path="/oficial" element={<ProtectedRoute allowedRole="official"><OfficialPanel /></ProtectedRoute>} />
-            <Route path="/oficial/escanear" element={<ProtectedRoute allowedRole="official"><OfficialQrScan /></ProtectedRoute>} />
-            <Route path="/oficial/verificar/:id" element={<ProtectedRoute allowedRole="official"><OfficialVerify /></ProtectedRoute>} />
-            <Route path="/oficial/nuevo" element={<ProtectedRoute allowedRole="official"><OfficialNewCheckin /></ProtectedRoute>} />
-            <Route path="/oficial/:id" element={<ProtectedRoute allowedRole="official"><OfficialDetail /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminPanel /></ProtectedRoute>} />
-            <Route path="*" element={<div className="page-error"><h2>404 — Página no encontrada</h2><p>¿Te perdiste en la frontera?</p></div>} />
-          </Routes>
-        </main>
-      </div>
+    <AuthContext.Provider value={{ user, login, logout, online, syncStatus }}>
+      <AppShell syncStatus={syncStatus}>
+        <Routes>
+          <Route path="/" element={<RoleSelect />} />
+          <Route path="/portal" element={<StaffPortalRoute />} />
+          <Route path="/login" element={<Navigate to="/portal" replace />} />
+          <Route path="/viajero" element={<TravelerHome />} />
+          <Route path="/viajero/ingreso" element={<TravelerLoginRoute />} />
+          <Route path="/viajero/registro" element={<TravelerRegisterRoute />} />
+          <Route path="/pasos" element={<AduanaSelect />} />
+          <Route path="/aduana/:id" element={<AduanaPage />} />
+          <Route path="/dashboard" element={<ProtectedRoute allowedRole="traveler"><TravelerDashboard /></ProtectedRoute>} />
+          <Route path="/checkin" element={<ProtectedRoute allowedRole="traveler"><TravelerCheckIn /></ProtectedRoute>} />
+          <Route path="/oficial" element={<ProtectedRoute allowedRole="official"><OfficialPanel /></ProtectedRoute>} />
+          <Route path="/oficial/escanear" element={<ProtectedRoute allowedRole="official"><OfficialQrScan /></ProtectedRoute>} />
+          <Route path="/oficial/verificar/:id" element={<ProtectedRoute allowedRole="official"><OfficialVerify /></ProtectedRoute>} />
+          <Route path="/oficial/nuevo" element={<ProtectedRoute allowedRole="official"><OfficialNewCheckin /></ProtectedRoute>} />
+          <Route path="/oficial/:id" element={<ProtectedRoute allowedRole="official"><OfficialDetail /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminPanel /></ProtectedRoute>} />
+          <Route path="*" element={<div className="page-error"><h2>404 — Página no encontrada</h2><p>¿Te perdiste en la frontera?</p></div>} />
+        </Routes>
+      </AppShell>
     </AuthContext.Provider>
   );
 }

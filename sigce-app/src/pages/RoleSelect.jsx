@@ -1,46 +1,73 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../App';
 import { Icon } from '../components/icons';
 
 function RoleSelect() {
+  const { user } = useAuth();
+
+  if (user?.role === 'traveler') return <Navigate to="/pasos" replace />;
+  if (user?.role === 'official') return <Navigate to="/oficial" replace />;
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
+
   return (
-    <div className="role-select-page">
-      <div className="role-hero">
-        <Icon name="logo" size="xl" className="role-hero-icon-svg" />
-        <h1>SIGCE</h1>
-        <p className="role-hero-subtitle">Sistema Integrado de Gestión de Comercio Exterior</p>
-        <p className="role-hero-desc">Selecciona cómo deseas ingresar al sistema</p>
+    <div className="traveler-landing-page">
+      <div className="traveler-landing-hero">
+        <Icon name="logo" size="xl" className="traveler-landing-icon" />
+        <h1>Check-In Fronterizo</h1>
+        <p className="traveler-landing-subtitle">SIGCE — Sistema Integrado de Gestión de Comercio Exterior</p>
+        <p className="traveler-landing-desc">
+          Realiza tu trámite anticipado antes de llegar al paso fronterizo y agiliza tu ingreso a Chile.
+        </p>
       </div>
 
-      <div className="role-cards">
-        <Link to="/viajero" className="role-card role-card-traveler">
-          <span className="role-card-icon-wrap"><Icon name="traveler" size="lg" /></span>
-          <h2>Soy Viajero</h2>
-          <p>Realiza tu check-in anticipado en pasos fronterizos terrestres</p>
-          <ul className="role-card-features">
-            <li>Crear cuenta y gestionar trámites</li>
-            <li>Consultar estado de solicitudes</li>
-            <li>Modo offline disponible</li>
-          </ul>
-          <span className="role-card-action">Continuar como viajero →</span>
+      <div className="traveler-landing-actions">
+        <Link to="/pasos" className="traveler-landing-cta">
+          <Icon name="globe" size="lg" />
+          <span>
+            <strong>Comenzar check-in</strong>
+            <small>Selecciona tu paso fronterizo</small>
+          </span>
         </Link>
 
-        <Link to="/login" className="role-card role-card-staff">
-          <span className="role-card-icon-wrap"><Icon name="user" size="lg" /></span>
-          <h2>Soy Funcionario</h2>
-          <p>Acceso para personal de aduana y administración</p>
-          <ul className="role-card-features">
-            <li>Procesar solicitudes de viajeros</li>
-            <li>Revisión PDI y gestión de estados</li>
-            <li>Panel de control oficial</li>
-          </ul>
-          <span className="role-card-action">Ingresar al panel →</span>
+        <Link to="/viajero/registro" className="traveler-landing-secondary">
+          <Icon name="userPlus" size="md" />
+          <span>Crear cuenta de viajero</span>
+        </Link>
+
+        <Link to="/viajero/ingreso" className="traveler-landing-secondary">
+          <Icon name="lock" size="md" />
+          <span>Ya tengo cuenta — iniciar sesión</span>
         </Link>
       </div>
 
-      <p className="role-footer-note">
-        ¿Eres administrador? Usa el acceso de funcionario con tus credenciales de admin.
-      </p>
+      <div className="traveler-landing-benefits">
+        <div className="landing-benefit">
+          <Icon name="check" size="md" />
+          <span>Trámites anticipados en línea</span>
+        </div>
+        <div className="landing-benefit">
+          <Icon name="offline" size="md" />
+          <span>Funciona sin conexión</span>
+        </div>
+        <div className="landing-benefit">
+          <Icon name="file" size="md" />
+          <span>Adjunta documentos en el mismo formulario</span>
+        </div>
+      </div>
+
+      <details className="staff-access-panel">
+        <summary className="staff-access-summary">
+          <Icon name="shield" size="sm" />
+          Acceso personal de aduana
+        </summary>
+        <div className="staff-access-body">
+          <p>Área restringida para funcionarios y administradores del sistema.</p>
+          <Link to="/portal" className="btn btn-secondary btn-sm">
+            Ingresar al portal interno →
+          </Link>
+        </div>
+      </details>
     </div>
   );
 }
