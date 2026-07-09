@@ -25,16 +25,20 @@ function AduanaSelect() {
             Realiza tu check-in anticipado y agiliza tu paso por la aduana chilena.
             Selecciona el paso fronterizo para comenzar.
           </p>
+
+          <div className="aduana-select-headings">
+            <h2 className="aduana-select-title">
+              <Icon name="globe" size="md" className="aduana-select-title-icon" />
+              Pasos Fronterizos de Chile
+            </h2>
+            <p className="aduana-select-lead">
+              Elige tu punto de cruce para iniciar el check-in anticipado
+            </p>
+          </div>
         </div>
       </div>
 
       <div className="aduana-grid-section">
-        <h2 className="section-title">
-          <Icon name="globe" size="md" className="section-title-icon" />
-          Pasos Fronterizos de Chile
-        </h2>
-        <p className="section-subtitle">Elige tu punto de cruce para iniciar el check-in anticipado</p>
-
         {loading && <div className="loading">Cargando pasos fronterizos...</div>}
 
         {Object.entries(byCountry).map(([country, list]) => (

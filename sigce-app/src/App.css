@@ -1828,9 +1828,10 @@
   .aduana-header-info { flex-direction: column; align-items: flex-start; gap: 12px; }
   .aduana-header-stats { flex-direction: column; gap: 4px; }
   .aduana-stats { flex-direction: column; gap: 6px; }
-  .aduana-hero { padding: 32px 16px 60px; }
+  .aduana-hero { padding: 32px 16px 48px; margin-bottom: 0; }
   .hero-content h1 { font-size: 1.8em; }
-  .aduana-grid-section { padding: 0 12px 24px; }
+  .aduana-select-title { font-size: 1.2em; }
+  .aduana-grid-section { padding: 24px 12px 24px; margin-top: -16px; }
   .aduana-grid { grid-template-columns: 1fr; gap: 16px; }
   .aduana-select-page { margin: -12px auto; }
   .info-cards { grid-template-columns: 1fr; gap: 12px; }
@@ -1923,7 +1924,7 @@
 .aduana-country-title {
   font-size: 1.1em;
   color: var(--primary);
-  margin: 24px 0 12px;
+  margin: 8px 0 12px;
   padding-bottom: 8px;
   border-bottom: 2px solid var(--border);
 }
@@ -2260,8 +2261,8 @@
   background: var(--hero-bg);
   color: white;
   text-align: center;
-  padding: 60px 24px 80px;
-  margin-bottom: -40px;
+  padding: 60px 24px 56px;
+  margin-bottom: 0;
 }
 .hero-content { max-width: 700px; margin: 0 auto; }
 .hero-content h1 {
@@ -2282,10 +2283,42 @@
   line-height: 1.7;
 }
 
+.aduana-select-headings {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.aduana-select-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 1.45em;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.aduana-select-title-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.aduana-select-lead {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 1em;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
 .aduana-grid-section {
-  padding: 0 24px 40px;
+  padding: 32px 24px 40px;
   position: relative;
   z-index: 1;
+  background: var(--bg);
+  border-radius: 24px 24px 0 0;
+  margin-top: -24px;
 }
 .section-title {
   display: flex;
