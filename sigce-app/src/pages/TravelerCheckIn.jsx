@@ -7,6 +7,7 @@ import StatusBadge from '../components/StatusBadge';
 import CheckinQr from '../components/CheckinQr';
 import DocumentManager from '../components/DocumentManager';
 import CheckinStepBar from '../components/CheckinStepBar';
+import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
 import { computeValidUntil } from '../services/qrUtils';
 
 const buildInitialForm = (user) => ({
