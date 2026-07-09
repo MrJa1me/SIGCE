@@ -1,0 +1,100 @@
+# Producción — Portainer + Caddy (red caddy_net)
+# Variables en Portainer → Environment variables:
+#   POSTGRES_PASSWORD, JWT_SECRET
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: sigce-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sigce
+      POSTGRES_USER: sigce
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigce2026}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigce -d sigce"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  auth:
+    build: ./services/auth
+    container_name: sigce-auth
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sigce
+      DB_USER: sigce
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-sigce2026}
+      JWT_SECRET: ${JWT_SECRET:-sigce-dev-secret-2026}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  checkins:
+    build: ./services/checkins
+    container_name: sigce-checkins
+    restart: unless-stopped
+    environment:
+      PORT: 3002
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sigce
+      DB_USER: sigce
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-sigce2026}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  users:
+    build: ./services/users
+    container_name: sigce-users
+    restart: unless-stopped
+    environment:
+      PORT: 3003
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: sigce
+      DB_USER: sigce
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-sigce2026}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  gateway:
+    build: ./services/gateway
+    container_name: sigce-gateway
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+      AUTH_URL: http://auth:3001
+      CHECKINS_URL: http://checkins:3002
+      USERS_URL: http://users:3003
+    depends_on:
+      - auth
+      - checkins
+      - users
+
+  frontend:
+    build: ./sigce-app
+    container_name: sigce-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    depends_on:
+      - gateway
+    networks:
+      - default
+      - caddy_net
+
+volumes:
+  pgdata:
+
+networks:
+  caddy_net:
+    external: true

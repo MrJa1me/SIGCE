@@ -1,0 +1,4 @@
+# Pegar en el Caddyfile del stack Caddy (Portainer)
+sigce.mrjaime-glb.uk {
+    reverse_proxy sigce-frontend:80
+}
