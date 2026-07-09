@@ -1,5 +1,9 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import RoleSelect from './pages/RoleSelect';
+import TravelerHome from './pages/TravelerHome';
+import TravelerLogin from './pages/TravelerLogin';
+import TravelerRegister from './pages/TravelerRegister';
 import Login from './pages/Login';
 import AduanaSelect from './pages/AduanaSelect';
 import AduanaPage from './pages/AduanaPage';
@@ -49,14 +53,36 @@ function App() {
     return () => stopPeriodicSync();
   }, []);
 
-  // Protected route wrapper
   const ProtectedRoute = ({ children, allowedRole }) => {
-    if (!user) return <Navigate to="/login" replace />;
+    if (!user) {
+      if (allowedRole === 'traveler') return <Navigate to="/viajero/ingreso" replace />;
+      return <Navigate to="/login" replace />;
+    }
     if (allowedRole && user.role !== allowedRole) {
       if (user.role === 'admin') return <Navigate to="/admin" replace />;
-      return <Navigate to={user.role === 'official' ? '/oficial' : '/'} replace />;
+      if (user.role === 'official') return <Navigate to="/oficial" replace />;
+      if (user.role === 'traveler') return <Navigate to="/pasos" replace />;
+      return <Navigate to="/" replace />;
     }
     return children;
+  };
+
+  const StaffLoginRoute = () => {
+    if (!user) return <Login />;
+    if (user.role === 'admin') return <Navigate to="/admin" replace />;
+    if (user.role === 'official') return <Navigate to="/oficial" replace />;
+    if (user.role === 'traveler') return <Navigate to="/pasos" replace />;
+    return <Navigate to="/" replace />;
+  };
+
+  const TravelerLoginRoute = () => {
+    if (user?.role === 'traveler') return <Navigate to="/pasos" replace />;
+    return <TravelerLogin />;
+  };
+
+  const TravelerRegisterRoute = () => {
+    if (user?.role === 'traveler') return <Navigate to="/pasos" replace />;
+    return <TravelerRegister />;
   };
 
   return (
@@ -66,13 +92,15 @@ function App() {
         <ConnectionStatus online={online} syncStatus={syncStatus} />
         <main className="main-content">
           <Routes>
-            <Route path="/login" element={user ? <Navigate to={user.role === 'official' ? '/oficial' : '/'} replace /> : <Login />} />
-            {/* Rutas públicas — viajeros sin login */}
-            <Route path="/" element={<AduanaSelect />} />
+            <Route path="/" element={<RoleSelect />} />
+            <Route path="/viajero" element={<TravelerHome />} />
+            <Route path="/viajero/ingreso" element={<TravelerLoginRoute />} />
+            <Route path="/viajero/registro" element={<TravelerRegisterRoute />} />
+            <Route path="/login" element={<StaffLoginRoute />} />
+            <Route path="/pasos" element={<AduanaSelect />} />
             <Route path="/aduana/:id" element={<AduanaPage />} />
-            <Route path="/dashboard" element={<TravelerDashboard />} />
-            <Route path="/checkin" element={<TravelerCheckIn />} />
-            {/* Rutas protegidas */}
+            <Route path="/dashboard" element={<ProtectedRoute allowedRole="traveler"><TravelerDashboard /></ProtectedRoute>} />
+            <Route path="/checkin" element={<ProtectedRoute allowedRole="traveler"><TravelerCheckIn /></ProtectedRoute>} />
             <Route path="/oficial" element={<ProtectedRoute allowedRole="official"><OfficialPanel /></ProtectedRoute>} />
             <Route path="/oficial/:id" element={<ProtectedRoute allowedRole="official"><OfficialDetail /></ProtectedRoute>} />
             <Route path="/oficial/nuevo" element={<ProtectedRoute allowedRole="official"><OfficialNewCheckin /></ProtectedRoute>} />

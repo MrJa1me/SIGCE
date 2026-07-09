@@ -23,8 +23,55 @@ export async function login(username, password) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password }),
   });
-  if (!res.ok) throw new Error('Credenciales inválidas');
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Credenciales inválidas');
+  }
   return res.json();
+}
+
+export async function register({ username, password, name, rut, email }) {
+  const res = await fetch(`${API_URL}/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, name, rut, email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al registrar');
+  return data;
+}
+
+export async function getTravelerCheckins(userId, rut) {
+  const results = [];
+  const seen = new Set();
+
+  if (userId) {
+    const res = await fetch(`${API_URL}/checkins?userId=${userId}&role=traveler`);
+    if (res.ok) {
+      for (const item of mapCheckin(await res.json())) {
+        const key = item.localId || item.id;
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push(item);
+        }
+      }
+    }
+  }
+
+  if (rut) {
+    const res = await fetch(`${API_URL}/checkins/by-rut/${encodeURIComponent(rut)}`);
+    if (res.ok) {
+      for (const item of mapCheckin(await res.json())) {
+        const key = item.localId || item.id;
+        if (!seen.has(key)) {
+          seen.add(key);
+          results.push(item);
+        }
+      }
+    }
+  }
+
+  return results.sort((a, b) => new Date(b.createdAt || b.created_at) - new Date(a.createdAt || a.created_at));
 }
 
 export async function getCheckins(params = {}) {

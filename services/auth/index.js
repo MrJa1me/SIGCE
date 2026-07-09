@@ -18,6 +18,18 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
+async function runMigrations() {
+  try {
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS rut VARCHAR(50)');
+    await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email VARCHAR(100)');
+    console.log('📦 Migration: users profile columns OK');
+  } catch (err) {
+    console.error('Migration error:', err.message);
+  }
+}
+
+runMigrations();
+
 // Health check
 app.get('/health', (req, res) => res.json({ service: 'auth', status: 'ok' }));
 
@@ -29,7 +41,7 @@ app.post('/api/login', async (req, res) => {
   }
   try {
     const result = await pool.query(
-      'SELECT id, username, password, name, role FROM users WHERE username = $1',
+      'SELECT id, username, password, name, role, rut, email FROM users WHERE username = $1',
       [username]
     );
     if (result.rows.length === 0) {
@@ -50,9 +62,64 @@ app.post('/api/login', async (req, res) => {
       username: user.username,
       name: user.name,
       role: user.role,
+      rut: user.rut,
+      email: user.email,
     });
   } catch (err) {
     console.error('Login error:', err.message);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// Register traveler account (public)
+app.post('/api/register', async (req, res) => {
+  const { username, password, name, rut, email } = req.body;
+  if (!username || !password || !name) {
+    return res.status(400).json({ error: 'Usuario, contraseña y nombre son requeridos' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+  }
+  if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+    return res.status(400).json({ error: 'El usuario solo puede contener letras, números, puntos, guiones y guiones bajos' });
+  }
+
+  try {
+    const exists = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
+    if (exists.rows.length > 0) {
+      return res.status(400).json({ error: 'El nombre de usuario ya existe' });
+    }
+
+    if (rut) {
+      const rutExists = await pool.query('SELECT id FROM users WHERE rut = $1', [rut.trim()]);
+      if (rutExists.rows.length > 0) {
+        return res.status(400).json({ error: 'Este RUT ya está registrado' });
+      }
+    }
+
+    const result = await pool.query(
+      'INSERT INTO users (username, password, name, role, rut, email) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, username, name, role, rut, email',
+      [username.trim(), password, name.trim(), 'traveler', rut?.trim() || null, email?.trim() || null]
+    );
+    const user = result.rows[0];
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      token,
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      rut: user.rut,
+      email: user.email,
+    });
+  } catch (err) {
+    console.error('Register error:', err.message);
     res.status(500).json({ error: 'Error interno del servidor' });
   }
 });

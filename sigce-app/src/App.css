@@ -258,6 +258,232 @@
   font-size: 0.85em;
 }
 
+.login-card-wide {
+  max-width: 560px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.form-row .form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8em;
+  color: var(--text-light);
+}
+
+/* ========== ROLE SELECT ========== */
+.role-select-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.role-hero {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.role-hero-icon {
+  font-size: 3.5em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.role-hero h1 {
+  color: var(--primary);
+  font-size: 2.4em;
+  letter-spacing: 3px;
+}
+
+.role-hero-subtitle {
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+.role-hero-desc {
+  margin-top: 12px;
+  font-size: 1.05em;
+  color: var(--text);
+}
+
+.role-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.role-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-hover);
+  text-decoration: none;
+  color: inherit;
+}
+
+.role-card-traveler:hover {
+  border-color: var(--accent);
+}
+
+.role-card-staff:hover {
+  border-color: var(--primary);
+}
+
+.role-card-icon {
+  font-size: 2.5em;
+  margin-bottom: 12px;
+}
+
+.role-card h2 {
+  margin-bottom: 8px;
+  font-size: 1.4em;
+}
+
+.role-card p {
+  color: var(--text-light);
+  margin-bottom: 16px;
+  flex: 1;
+}
+
+.role-card-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px;
+  font-size: 0.9em;
+}
+
+.role-card-features li {
+  padding: 4px 0;
+  color: var(--text);
+}
+
+.role-card-features li::before {
+  content: '✓ ';
+  color: var(--success);
+  font-weight: bold;
+}
+
+.role-card-action {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.role-footer-note {
+  text-align: center;
+  margin-top: 32px;
+  color: var(--text-light);
+  font-size: 0.9em;
+}
+
+/* ========== TRAVELER HOME ========== */
+.traveler-home-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.traveler-home-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 16px;
+  color: var(--text-light);
+  text-decoration: none;
+  font-size: 0.9em;
+}
+
+.back-link:hover {
+  color: var(--primary);
+}
+
+.traveler-home-icon {
+  font-size: 3em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+.traveler-home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.traveler-action-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.traveler-action-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: inherit;
+}
+
+.traveler-action-primary {
+  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--bg-card) 0%, rgba(46, 125, 50, 0.05) 100%);
+}
+
+.traveler-action-muted {
+  opacity: 0.85;
+}
+
+.traveler-action-card .action-icon {
+  font-size: 2em;
+}
+
+.traveler-action-card h3 {
+  margin: 0 0 4px;
+  font-size: 1.1em;
+}
+
+.traveler-action-card p {
+  margin: 0;
+  font-size: 0.9em;
+  color: var(--text-light);
+}
+
+.navbar-guest-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-login-staff {
+  background: var(--primary);
+  color: white !important;
+}
+
 /* ========== FORMS ========== */
 .form-group {
   margin-bottom: 16px;

@@ -6,6 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
   password VARCHAR(100) NOT NULL,
   name VARCHAR(100) NOT NULL,
   role VARCHAR(20) NOT NULL DEFAULT 'traveler',
+  rut VARCHAR(50),
+  email VARCHAR(100),
   created_at TIMESTAMP DEFAULT NOW()
 );
 

@@ -78,9 +78,9 @@ function AduanaSelect() {
             <p>Funciona sin internet, sincroniza automáticamente</p>
           </div>
           <div className="info-mini-card">
-            <span className="info-icon">⚡</span>
-            <h4>Sin Cuenta Necesaria</h4>
-            <p>Ingresa directo, sin registro ni complicaciones</p>
+            <span className="info-icon">🔐</span>
+            <h4>Cuenta de Viajero</h4>
+            <p>Crea tu cuenta para gestionar y seguir tus trámites</p>
           </div>
         </div>
         <div className="entities-bar">

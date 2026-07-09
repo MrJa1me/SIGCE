@@ -6,12 +6,11 @@ import { useTheme } from '../services/themeContext';
 function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-
   const { isDark, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   return (
@@ -24,15 +23,17 @@ function Navbar() {
       </div>
 
       <div className="navbar-links">
-        {/* Enlaces públicos para viajeros */}
-        <Link to="/" className="nav-link">🌎 Pasos Fronterizos</Link>
-        <Link to="/dashboard" className="nav-link">📋 Mis Trámites</Link>
-        {/* Enlaces para usuarios autenticados */}
+        <Link to="/pasos" className="nav-link">🌎 Pasos Fronterizos</Link>
+        {user?.role === 'traveler' && (
+          <Link to="/dashboard" className="nav-link">📋 Mis Trámites</Link>
+        )}
         {user?.role === 'official' && <Link to="/oficial" className="nav-link">👤 Panel Oficial</Link>}
-        {user?.role === 'admin' && <>
-          <Link to="/admin" className="nav-link">👑 Admin</Link>
-          <Link to="/oficial" className="nav-link">👤 Panel Oficial</Link>
-        </>}
+        {user?.role === 'admin' && (
+          <>
+            <Link to="/admin" className="nav-link">👑 Admin</Link>
+            <Link to="/oficial" className="nav-link">👤 Panel Oficial</Link>
+          </>
+        )}
       </div>
 
       <div className="navbar-actions">
@@ -45,14 +46,21 @@ function Navbar() {
         {user ? (
           <>
             <span className="user-info">
-              <span className="user-avatar">{user.role === 'official' ? '👤' : '🧑‍✈️'}</span>
+              <span className="user-avatar">
+                {user.role === 'admin' ? '👑' : user.role === 'official' ? '👤' : '🧳'}
+              </span>
               <span className="user-name">{user.name}</span>
-              <span className={`user-role ${user.role}`}>{user.role === 'admin' ? 'Admin' : user.role === 'official' ? 'Funcionario' : 'Viajero'}</span>
+              <span className={`user-role ${user.role}`}>
+                {user.role === 'admin' ? 'Admin' : user.role === 'official' ? 'Funcionario' : 'Viajero'}
+              </span>
             </span>
             <button onClick={handleLogout} className="btn-logout">Salir</button>
           </>
         ) : (
-          <Link to="/login" className="btn-login-small">🔐 Acceso Funcionarios</Link>
+          <div className="navbar-guest-actions">
+            <Link to="/viajero" className="btn-login-small">🧳 Viajeros</Link>
+            <Link to="/login" className="btn-login-small btn-login-staff">👤 Funcionarios</Link>
+          </div>
         )}
       </div>
     </nav>

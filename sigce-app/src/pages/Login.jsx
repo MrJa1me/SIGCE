@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { login as apiLogin } from '../services/api';
-import { saveCheckinLocally } from '../services/offlineDb';
 
 function Login() {
   const { login, online } = useAuth();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const redirectByRole = (role) => {
+    if (role === 'admin') navigate('/admin');
+    else if (role === 'official') navigate('/oficial');
+    else navigate('/');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,25 +23,19 @@ function Login() {
     setLoading(true);
 
     if (!online) {
-      // Offline demo mode — allow local login with default users
       if (username === 'admin' && password === 'admin123') {
         login({ id: 1, username, name: 'Admin Aduanas', role: 'admin' });
+        redirectByRole('admin');
       } else if ((username === 'oficial1' || username === 'oficial2') && password === 'aduana2026') {
         login({
           id: username === 'oficial1' ? 2 : 3,
           username,
           name: username === 'oficial1' ? 'María González' : 'Carlos Muñoz',
-          role: 'official'
+          role: 'official',
         });
-      } else if ((username === 'viajero1' || username === 'viajero2') && password === 'viajero123') {
-        login({
-          id: username === 'viajero1' ? 4 : 5,
-          username,
-          name: username === 'viajero1' ? 'Juan Pérez' : 'Ana Soto',
-          role: 'traveler'
-        });
+        redirectByRole('official');
       } else {
-        setError('Modo offline: usuario/contraseña inválidos');
+        setError('Modo offline: solo funcionarios y admin con credenciales de prueba');
       }
       setLoading(false);
       return;
@@ -42,9 +43,15 @@ function Login() {
 
     try {
       const userData = await apiLogin(username, password);
+      if (userData.role === 'traveler') {
+        setError('Esta cuenta es de viajero. Usa el acceso en el área de viajeros.');
+        setLoading(false);
+        return;
+      }
       login(userData);
-    } catch {
-      setError('Usuario o contraseña incorrectos');
+      redirectByRole(userData.role);
+    } catch (err) {
+      setError(err.message || 'Usuario o contraseña incorrectos');
     }
     setLoading(false);
   };
@@ -53,15 +60,15 @@ function Login() {
     <div className="page-center">
       <div className="login-card">
         <div className="login-header">
-          <span className="login-icon">🛂</span>
-          <h1>SIGCE</h1>
-          <p className="login-subtitle">Sistema Integrado de Gestión de Comercio Exterior</p>
-          <p className="login-caption">Check-In Anticipado para Pasos Fronterizos</p>
+          <span className="login-icon">👤</span>
+          <h1>Acceso Funcionarios</h1>
+          <p className="login-subtitle">Panel oficial y administración</p>
+          <p className="login-caption">Solo personal de aduana y administradores</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="alert alert-error">{error}</div>}
-          {!online && <div className="alert alert-warning">📴 Modo offline — usando credenciales locales</div>}
+          {!online && <div className="alert alert-warning">📴 Modo offline — credenciales de prueba disponibles</div>}
 
           <div className="form-group">
             <label htmlFor="username">Usuario</label>
@@ -70,7 +77,7 @@ function Login() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin / oficial1 / viajero1"
+              placeholder="oficial1 / admin"
               required
               disabled={loading}
             />
@@ -90,14 +97,14 @@ function Login() {
           </div>
 
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Ingresando...' : 'Ingresar al Sistema'}
+            {loading ? 'Ingresando...' : 'Ingresar al panel'}
           </button>
         </form>
 
         <div className="login-footer">
-          <p><strong>Credenciales de prueba:</strong></p>
-          <p style={{color: 'var(--text-light)', fontSize: '0.9em'}}>
-            📌 Los viajeros no necesitan cuenta — solo entra directo desde la <a href="/">página principal</a>.
+          <p><Link to="/">← Volver a selección de rol</Link></p>
+          <p style={{ color: 'var(--text-light)', fontSize: '0.9em' }}>
+            ¿Eres viajero? <Link to="/viajero">Ir al área de viajeros</Link>
           </p>
           <div className="creds-grid">
             <div>
@@ -106,8 +113,7 @@ function Login() {
             </div>
             <div>
               <p>👤 <strong>Funcionarios:</strong></p>
-              <code>oficial1 / aduana2026</code><br />
-              <code>oficial2 / aduana2026</code>
+              <code>oficial1 / aduana2026</code>
             </div>
           </div>
         </div>

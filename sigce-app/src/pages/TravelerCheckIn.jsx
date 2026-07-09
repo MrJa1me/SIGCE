@@ -4,11 +4,11 @@ import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
 
-const initialForm = {
-  fullName: '',
-  rut: '',
+const buildInitialForm = (user) => ({
+  fullName: user?.name || '',
+  rut: user?.rut || '',
   nationality: 'Chilena',
-  email: '',
+  email: user?.email || '',
   phone: '',
   checkinType: 'vehicle',
   // Vehicle fields
@@ -31,11 +31,11 @@ const initialForm = {
   // General
   borderCrossing: '',
   comments: '',
-};
+});
 
 function TravelerCheckIn() {
-  const { online } = useAuth();
-  const [form, setForm] = useState(initialForm);
+  const { user, online } = useAuth();
+  const [form, setForm] = useState(() => buildInitialForm(user));
   const [step, setStep] = useState(1); // 1: type select, 2: form, 3: confirmation
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
@@ -74,9 +74,9 @@ function TravelerCheckIn() {
 
     const checkinData = {
       localId: crypto.randomUUID(),
-      userId: null,
-      userName: form.fullName || 'Visitante',
-      rut: form.rut,
+      userId: user?.id || null,
+      userName: form.fullName || user?.name || 'Visitante',
+      rut: form.rut || user?.rut || '',
       nationality: form.nationality,
       email: form.email,
       phone: form.phone,
@@ -107,7 +107,7 @@ function TravelerCheckIn() {
 
       setConfirmation(localSaved);
       setStep(3);
-      setForm(initialForm);
+      setForm(buildInitialForm(user));
     } catch (err) {
       setError('Error al guardar: ' + err.message);
     }
@@ -117,7 +117,7 @@ function TravelerCheckIn() {
   const resetForm = () => {
     setStep(1);
     setConfirmation(null);
-    setForm(initialForm);
+    setForm(buildInitialForm(user));
   };
 
   return (

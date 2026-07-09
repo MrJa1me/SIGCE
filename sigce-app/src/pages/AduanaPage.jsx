@@ -5,11 +5,11 @@ import { BORDER_CROSSINGS, getBorderCrossing } from '../services/borderCrossings
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
 
-const initialForm = {
-  fullName: '',
-  rut: '',
+const buildInitialForm = (user) => ({
+  fullName: user?.name || '',
+  rut: user?.rut || '',
   nationality: 'Chilena',
-  email: '',
+  email: user?.email || '',
   phone: '',
   checkinType: '',
   // Vehicle fields
@@ -35,17 +35,17 @@ const initialForm = {
   documentType: 'ci',
   nationalityCountry: 'Chile',
   comments: '',
-};
+});
 
 function AduanaPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { online } = useAuth();
+  const { user, online } = useAuth();
   const aduana = getBorderCrossing(id);
 
-  const [step, setStep] = useState('select'); // 'select' | 'form' | 'confirmation'
+  const [step, setStep] = useState('select');
   const [checkinType, setCheckinType] = useState('');
-  const [form, setForm] = useState(initialForm);
+  const [form, setForm] = useState(() => buildInitialForm(user));
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState('');
@@ -69,7 +69,7 @@ function AduanaPage() {
 
   const selectType = (type) => {
     setCheckinType(type);
-    setForm(initialForm);
+    setForm({ ...buildInitialForm(user), checkinType: type });
     setStep('form');
   };
 
@@ -103,9 +103,9 @@ function AduanaPage() {
 
     const checkinData = {
       localId: crypto.randomUUID(),
-      userId: null,
-      userName: form.fullName || 'Visitante',
-      rut: form.rut,
+      userId: user?.id || null,
+      userName: form.fullName || user?.name || 'Visitante',
+      rut: form.rut || user?.rut || '',
       nationality: form.nationality,
       email: form.email,
       phone: form.phone,
@@ -126,7 +126,7 @@ function AduanaPage() {
       }
       setConfirmation(localSaved);
       setStep('confirmation');
-      setForm(initialForm);
+      setForm(buildInitialForm(user));
     } catch (err) {
       setError('Error al guardar: ' + err.message);
     }
@@ -137,14 +137,14 @@ function AduanaPage() {
     setStep('select');
     setCheckinType('');
     setConfirmation(null);
-    setForm(initialForm);
+    setForm(buildInitialForm(user));
   };
 
   return (
     <div className="aduana-page" style={{ '--aduana-color': aduana.color, '--aduana-light': aduana.colorLight, '--aduana-bg': aduana.colorBg }}>
       {/* Aduana Header */}
       <div className="aduana-header" style={{ background: aduana.gradient }}>
-        <button className="aduana-back" onClick={() => navigate('/')}>← Volver a pasos fronterizos</button>
+        <button className="aduana-back" onClick={() => navigate('/pasos')}>← Volver a pasos fronterizos</button>
         <div className="aduana-header-info">
           <span className="aduana-big-icon">{aduana.icon}</span>
           <div>
@@ -163,6 +163,19 @@ function AduanaPage() {
       {step === 'select' && (
         <div className="aduana-content">
           {!online && <div className="alert alert-warning">📴 Sin conexión — los datos se guardarán localmente y se sincronizarán después</div>}
+
+          {user?.role !== 'traveler' ? (
+            <div className="card" style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
+              <span style={{ fontSize: 48 }}>🔐</span>
+              <h2>Inicia sesión para continuar</h2>
+              <p className="card-subtitle">Necesitas una cuenta de viajero para realizar el check-in anticipado</p>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 20 }}>
+                <Link to="/viajero/registro" className="btn btn-primary">Crear cuenta</Link>
+                <Link to="/viajero/ingreso" className="btn btn-secondary">Iniciar sesión</Link>
+              </div>
+            </div>
+          ) : (
+            <>
           <h2 className="aduana-section-title">Check-In Anticipado — {aduana.shortName}</h2>
           <p className="aduana-section-subtitle">
             Selecciona el tipo de trámite que deseas realizar. Al llegar a la aduana, preséntate con tu código de confirmación.
@@ -194,6 +207,8 @@ function AduanaPage() {
               <span className="type-info">📄 Consulta general</span>
             </button>
           </div>
+            </>
+          )}
         </div>
       )}
 
