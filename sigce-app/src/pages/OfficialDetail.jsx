@@ -5,10 +5,11 @@ import { getLocalCheckins, updateLocalCheckinStatus, queueStatusChange, saveChec
 import { getCheckin, updateCheckinStatus, updatePdiReview } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import DocumentManager from '../components/DocumentManager';
-import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import { Icon, CheckinTypeIcon, checkinTypeTitle, yesNo } from '../components/icons';
 
 function OfficialDetail() {
+  const { resolveCrossingName } = useBorderCrossings();
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, online } = useAuth();
@@ -162,7 +163,7 @@ function OfficialDetail() {
             <div><strong>Nombre:</strong> {checkin.userName || 'Visitante'}</div>
             <div><strong>RUT:</strong> {checkin.rut || '—'}</div>
             <div><strong>Nacionalidad:</strong> {checkin.nationality || 'Chilena'}</div>
-            <div><strong>Paso Fronterizo:</strong> {BORDER_CROSSINGS.find(bc => bc.id === checkin.borderCrossing)?.name || checkin.borderCrossing || '—'}</div>
+            <div><strong>Paso Fronterizo:</strong> {resolveCrossingName(checkin.borderCrossing)}</div>
             <div><strong>Email:</strong> {checkin.email || '—'}</div>
             <div><strong>Teléfono:</strong> {checkin.phone || '—'}</div>
           </div>
@@ -290,7 +291,7 @@ function OfficialDetail() {
         <div className="detail-section">
           <h3 className="page-title-with-icon"><Icon name="clock" size="sm" /> Historial</h3>
           <div className="detail-grid">
-            <div><strong>Origen:</strong> {checkin.source === 'inperson' ? 'Trámite Presencial' : 'Check-In Online'}</div>
+            <div><strong>Origen:</strong> Check-In anticipado (web)</div>
             {checkin.createdBy && <div><strong>Creado por:</strong> {checkin.createdBy}</div>}
             <div><strong>Creado:</strong> {new Date(checkin.createdAt).toLocaleString('es-CL')}</div>
             {checkin.processedAt && <div><strong>Procesado:</strong> {new Date(checkin.processedAt).toLocaleString('es-CL')}</div>}

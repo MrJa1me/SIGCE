@@ -4,14 +4,14 @@ import { useAuth } from '../App';
 import { getLocalCheckins, updateLocalCheckinStatus, queueStatusChange } from '../services/offlineDb';
 import { getPendingCheckins, getCheckins, updateCheckinStatus } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
-import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import { Icon, CheckinTypeIcon, checkinTypeLabel, yesNo, PDI_STATUS_LABELS } from '../components/icons';
 
 function OfficialPanel() {
   const { user, online } = useAuth();
+  const { resolveCrossingName, getBorderCrossing } = useBorderCrossings();
   const navigate = useNavigate();
   const [checkins, setCheckins] = useState([]);
-  const [activeTab, setActiveTab] = useState('all');
   const [filter, setFilter] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
@@ -42,9 +42,10 @@ function OfficialPanel() {
         mergedData = await getLocalCheckins();
       }
       mergedData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setCheckins(mergedData);
+      const onlineOnly = mergedData.filter(c => c.source !== 'inperson');
+      setCheckins(onlineOnly);
       const s = { pending: 0, accepted: 0, rejected: 0, review: 0 };
-      for (const c of mergedData) {
+      for (const c of onlineOnly) {
         if (c.status === 'pending') s.pending++;
         else if (c.status === 'accepted') s.accepted++;
         else if (c.status === 'rejected') s.rejected++;
@@ -85,11 +86,7 @@ function OfficialPanel() {
     setActionLoading(null);
   };
 
-  const onlineCheckins = checkins.filter(c => c.source !== 'inperson');
-  const inpersonCheckins = checkins.filter(c => c.source === 'inperson');
-
-  const filteredList = (activeTab === 'online' ? onlineCheckins : activeTab === 'inperson' ? inpersonCheckins : checkins)
-    .filter(c => filter === 'all' || c.status === filter);
+  const filteredList = checkins.filter(c => filter === 'all' || c.status === filter);
 
   const exportCSV = (list) => {
     const headers = ['Código', 'Viajero', 'RUT', 'Nacionalidad', 'Tipo', 'Paso Fronterizo', 'Aduana', 'Origen', 'Estado', 'Fecha Ingreso', 'Procesado Por', 'Funcionario RUT', 'Paso Asignado', 'Comentario', 'PDI Estado'];
@@ -99,14 +96,14 @@ function OfficialPanel() {
       c.rut || '',
       c.nationality || '',
       checkinTypeLabel(c.checkinType),
-      BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.name || c.borderCrossing || '',
-      BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.region || '',
-      c.source === 'inperson' ? 'Presencial' : 'Online',
+      resolveCrossingName(c.borderCrossing),
+      getBorderCrossing(c.borderCrossing)?.region || '',
+      'Online',
       { pending: 'Pendiente', accepted: 'Aprobado', rejected: 'Rechazado', in_review: 'En Revisión' }[c.status] || c.status,
       new Date(c.createdAt).toLocaleString('es-CL'),
       c.processedBy || c.createdBy || '',
       c.rut || '',
-      BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.name || c.borderCrossing || '',
+      resolveCrossingName(c.borderCrossing),
       c.comment || '',
       c.pdiReview?.status === 'cleared' ? 'Autorizado' : c.pdiReview?.status === 'denied' ? 'Denegado' : c.pdiReview?.status === 'flagged' ? 'En Revisión' : 'Pendiente',
     ]);
@@ -126,9 +123,9 @@ function OfficialPanel() {
       <td>${c.rut || ''}</td>
       <td>${c.nationality || ''}</td>
       <td>${checkinTypeLabel(c.checkinType)}</td>
-      <td>${BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.name || c.borderCrossing || ''}</td>
-      <td>${BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.region || ''}</td>
-      <td>${c.source === 'inperson' ? 'Presencial' : 'Online'}</td>
+      <td>${resolveCrossingName(c.borderCrossing)}</td>
+      <td>${getBorderCrossing(c.borderCrossing)?.region || ''}</td>
+      <td>Online</td>
       <td>${{ pending: 'Pendiente', accepted: 'Aprobado', rejected: 'Rechazado', in_review: 'En Revisión' }[c.status] || c.status}</td>
       <td>${new Date(c.createdAt).toLocaleString('es-CL')}</td>
       <td>${c.processedBy || c.createdBy || ''}</td>
@@ -181,7 +178,7 @@ function OfficialPanel() {
         <h2 className="page-title-with-icon">
           <Icon name="user" size="md" /> Panel de Funcionarios — Aduanas Chile
         </h2>
-        <p>Gestión de check-ins anticipados y trámites presenciales</p>
+        <p>Gestión de check-ins anticipados enviados por viajeros</p>
         {!online && (
           <div className="alert alert-warning">
             Sin conexión al servidor — modo local
@@ -191,15 +188,11 @@ function OfficialPanel() {
           <button className="btn btn-primary" onClick={() => navigate('/oficial/escanear')}>
             <Icon name="qr" size="sm" /> Control Fronterizo (QR)
           </button>
-          <button className="btn btn-secondary" onClick={() => navigate('/oficial/nuevo')}>
-            Nuevo Trámite Presencial
-          </button>
-          <span className="bar-hint">Para viajeros que llegaron sin check-in</span>
           <div className="export-actions">
             <button className="btn btn-secondary btn-sm" onClick={() => exportCSV(filteredList)}>
               Exportar CSV
             </button>
-            <button className="btn btn-secondary btn-sm" onClick={() => printReport(filteredList, activeTab === 'inperson' ? 'Trámites Presenciales' : activeTab === 'online' ? 'Check-In Online' : 'Todos los Trámites')}>
+            <button className="btn btn-secondary btn-sm" onClick={() => printReport(filteredList, 'Check-Ins Anticipados')}>
               Imprimir / PDF
             </button>
           </div>
@@ -234,16 +227,9 @@ function OfficialPanel() {
         </div>
       </div>
 
-      <div className="zone-tabs">
-        <button className={`zone-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>
-          Todos ({checkins.length})
-        </button>
-        <button className={`zone-tab ${activeTab === 'online' ? 'active' : ''}`} onClick={() => setActiveTab('online')}>
-          Check-In Online ({onlineCheckins.length})
-        </button>
-        <button className={`zone-tab ${activeTab === 'inperson' ? 'active' : ''}`} onClick={() => setActiveTab('inperson')}>
-          Presencial ({inpersonCheckins.length})
-        </button>
+      <div className="zone-header zone-online">
+        <span className="zone-icon"><Icon name="globe" size="lg" /></span>
+        <div><strong>Check-ins anticipados</strong><p>Trámites realizados por viajeros desde la web antes de llegar al paso fronterizo</p></div>
       </div>
 
       <div className="filter-tabs">
@@ -254,26 +240,13 @@ function OfficialPanel() {
         ))}
       </div>
 
-      {activeTab === 'online' && (
-        <div className="zone-header zone-online">
-          <span className="zone-icon"><Icon name="globe" size="lg" /></span>
-          <div><strong>Zona: Check-In Online</strong><p>Trámites realizados por viajeros desde la página web</p></div>
-        </div>
-      )}
-      {activeTab === 'inperson' && (
-        <div className="zone-header zone-inperson">
-          <span className="zone-icon"><Icon name="edit" size="lg" /></span>
-          <div><strong>Zona: Trámites Presenciales</strong><p>Trámites registrados por funcionarios para viajeros en el paso fronterizo</p></div>
-        </div>
-      )}
-
       {loading ? (
         <div className="loading">Cargando trámites...</div>
       ) : filteredList.length === 0 ? (
         <div className="card empty-state">
           <Icon name={filter === 'pending' ? 'check' : 'inbox'} size="xl" className="empty-icon-svg" />
           <h3>{filter === 'pending' ? '¡No hay trámites pendientes!' : 'No hay resultados'}</h3>
-          <p>Cambia el filtro o crea un nuevo trámite presencial.</p>
+          <p>Cambia el filtro para ver otros trámites.</p>
         </div>
       ) : (
         <div className="checkins-list official-list">
@@ -284,8 +257,7 @@ function OfficialPanel() {
                   <CheckinTypeIcon type={checkin.checkinType} size="sm" />
                   <span>{checkinTypeLabel(checkin.checkinType)}</span>
                 </div>
-                {checkin.source === 'inperson' && <span className="source-badge inperson">Presencial</span>}
-                {(!checkin.source || checkin.source === 'online') && <span className="source-badge online">Online</span>}
+                <span className="source-badge online">Online</span>
                 <StatusBadge status={checkin.status} />
                 <span className="checkin-date">{formatDate(checkin.createdAt)}</span>
               </div>
@@ -294,7 +266,7 @@ function OfficialPanel() {
                 <div className="checkin-meta">
                   <span className="meta-item"><strong>Viajero:</strong> {checkin.userName || 'Visitante'}</span>
                   <span className="meta-item"><strong>RUT:</strong> {checkin.rut || '—'}</span>
-                  <span className="meta-item"><strong>Paso:</strong> {BORDER_CROSSINGS.find(bc => bc.id === checkin.borderCrossing)?.name || checkin.borderCrossing || '—'}</span>
+                  <span className="meta-item"><strong>Paso:</strong> {resolveCrossingName(checkin.borderCrossing)}</span>
                   <span className="meta-item"><strong>Código:</strong> <code>{(checkin.localId || checkin.id)?.slice(0, 8).toUpperCase()}</code></span>
                 </div>
                 {checkin.checkinType === 'vehicle' && checkin.details?.patent && (

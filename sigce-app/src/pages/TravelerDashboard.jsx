@@ -6,11 +6,12 @@ import { getTravelerCheckins } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import DocumentManager from '../components/DocumentManager';
 import CheckinQr from '../components/CheckinQr';
-import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
 
 function TravelerDashboard() {
   const { user, online } = useAuth();
+  const { resolveCrossingName } = useBorderCrossings();
   const [checkins, setCheckins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -126,13 +127,18 @@ function TravelerDashboard() {
               </div>
 
               <div className="checkin-card-body">
-                <CheckinQr
-                  checkinId={checkin.localId || checkin.id}
-                  initialStatus={checkin.status}
-                  size={140}
-                  live={online}
-                  showHint={false}
-                />
+                <details className="checkin-qr-toggle">
+                  <summary>
+                    <Icon name="qr" size="sm" /> Ver código QR
+                  </summary>
+                  <CheckinQr
+                    checkinId={checkin.localId || checkin.id}
+                    initialStatus={checkin.status}
+                    size={160}
+                    live={online}
+                    showHint={false}
+                  />
+                </details>
 
                 <div className="checkin-meta">
                   <span className="meta-item">
@@ -140,7 +146,7 @@ function TravelerDashboard() {
                     <code>{(checkin.localId || checkin.id)?.slice(0, 8).toUpperCase()}</code>
                   </span>
                   <span className="meta-item">
-                    <strong>Paso:</strong> {BORDER_CROSSINGS.find((bc) => bc.id === (checkin.borderCrossing || checkin.border_crossing))?.name || checkin.borderCrossing || checkin.border_crossing || '—'}
+                    <strong>Paso:</strong> {resolveCrossingName(checkin.borderCrossing || checkin.border_crossing)}
                   </span>
                   <span className="meta-item">
                     <strong>Fecha:</strong> {formatDate(checkin.createdAt || checkin.created_at)}

@@ -1,10 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import { Icon } from '../components/icons';
 
 function AduanaSelect() {
   const navigate = useNavigate();
+  const { crossings, loading } = useBorderCrossings();
+
+  const byCountry = crossings.reduce((acc, bc) => {
+    const key = bc.country || 'Otro';
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(bc);
+    return acc;
+  }, {});
 
   return (
     <div className="aduana-select-page">
@@ -23,12 +31,17 @@ function AduanaSelect() {
       <div className="aduana-grid-section">
         <h2 className="section-title">
           <Icon name="globe" size="md" className="section-title-icon" />
-          Pasos Fronterizos — República Argentina
+          Pasos Fronterizos de Chile
         </h2>
         <p className="section-subtitle">Elige tu punto de cruce para iniciar el check-in anticipado</p>
 
-        <div className="aduana-grid">
-          {BORDER_CROSSINGS.map(aduana => (
+        {loading && <div className="loading">Cargando pasos fronterizos...</div>}
+
+        {Object.entries(byCountry).map(([country, list]) => (
+          <div key={country} className="aduana-country-group">
+            <h3 className="aduana-country-title">Frontera con {country}</h3>
+            <div className="aduana-grid">
+              {list.map(aduana => (
             <button
               key={aduana.id}
               className="aduana-card"
@@ -65,8 +78,10 @@ function AduanaSelect() {
                 </div>
               </div>
             </button>
-          ))}
-        </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       <div className="aduana-footer-info">

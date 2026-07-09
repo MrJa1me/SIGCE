@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../App';
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
-import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import StatusBadge from '../components/StatusBadge';
 import CheckinQr from '../components/CheckinQr';
 import DocumentManager from '../components/DocumentManager';
+import CheckinStepBar from '../components/CheckinStepBar';
 import { Icon, CheckinTypeIcon, checkinTypeLabel, checkinTypeTitle } from '../components/icons';
 
 const buildInitialForm = (user) => ({
@@ -36,6 +37,7 @@ const buildInitialForm = (user) => ({
 
 function TravelerCheckIn() {
   const { user, online } = useAuth();
+  const { crossings, resolveCrossingName } = useBorderCrossings();
   const [form, setForm] = useState(() => buildInitialForm(user));
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
@@ -53,8 +55,14 @@ function TravelerCheckIn() {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const goToDocuments = (e) => {
     e.preventDefault();
+    setError('');
+    if (!e.currentTarget.reportValidity()) return;
+    setStep(3);
+  };
+
+  const finalizeCheckin = async () => {
     setSubmitting(true);
     setError('');
 
@@ -113,7 +121,7 @@ function TravelerCheckIn() {
       }
 
       setConfirmation(localSaved);
-      setStep(3);
+      setStep(4);
       setForm(buildInitialForm(user));
     } catch (err) {
       setError('Error al guardar: ' + err.message);
@@ -138,12 +146,17 @@ function TravelerCheckIn() {
         <div className="step-line"></div>
         <div className={`step ${step >= 2 ? 'active' : ''}`}>
           <div className="step-num">2</div>
-          <span>Completar Datos</span>
+          <span>Datos</span>
         </div>
         <div className="step-line"></div>
         <div className={`step ${step >= 3 ? 'active' : ''}`}>
           <div className="step-num">3</div>
-          <span>Confirmación</span>
+          <span>Documentos</span>
+        </div>
+        <div className="step-line"></div>
+        <div className={`step ${step >= 4 ? 'active' : ''}`}>
+          <div className="step-num">4</div>
+          <span>Código QR</span>
         </div>
       </div>
 
@@ -178,14 +191,15 @@ function TravelerCheckIn() {
 
       {step === 2 && (
         <div className="card checkin-form">
-          <button className="btn-back" onClick={() => { setStep(1); setDraftCheckinId(null); }}>← Volver</button>
+          <CheckinStepBar current="data" />
+          <button type="button" className="btn-back" onClick={() => { setStep(1); setDraftCheckinId(null); }}>← Volver</button>
           <h2 className="page-title-with-icon">
             <CheckinTypeIcon type={form.checkinType} size="md" />
             {checkinTypeTitle(form.checkinType).replace('Trámite ', 'Check-In ')}
           </h2>
           <p className="card-subtitle">Completa los datos para tu check-in anticipado. Si pierdes la conexión, tus datos se guardarán localmente.</p>
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={goToDocuments}>
             {error && <div className="alert alert-error">{error}</div>}
             {!online && (
               <div className="alert alert-warning">
@@ -215,7 +229,7 @@ function TravelerCheckIn() {
                 <label>Paso Fronterizo</label>
                 <select value={form.borderCrossing} onChange={e => updateField('borderCrossing', e.target.value)} required>
                   <option value="">— Selecciona un paso fronterizo —</option>
-                  {BORDER_CROSSINGS.map(bc => (
+                  {crossings.map(bc => (
                     <option key={bc.id} value={bc.id}>{bc.name} ({bc.region}) — {bc.country}</option>
                   ))}
                 </select>
@@ -376,42 +390,75 @@ function TravelerCheckIn() {
               </div>
             </div>
 
-            {draftCheckinId && (
-              <div className="form-section">
-                {online ? (
-                  <DocumentManager checkinId={draftCheckinId} embedded title="Documentos del trámite" />
-                ) : (
-                  <div className="alert alert-warning">
-                    Sin conexión — necesitas internet para adjuntar documentos antes de enviar.
-                  </div>
-                )}
-              </div>
-            )}
-
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={() => { setStep(1); setDraftCheckinId(null); }}>Cancelar</button>
-              <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Guardando...' : 'Realizar Check-In Anticipado'}
+              <button type="submit" className="btn btn-primary">
+                Siguiente: adjuntar documentos →
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {step === 3 && confirmation && (
-        <div className="card confirmation-card">
+      {step === 3 && (
+        <div className="card checkin-form">
+          <CheckinStepBar current="documents" />
+          <button type="button" className="btn-back" onClick={() => setStep(2)}>← Volver a los datos</button>
+          <h2 className="page-title-with-icon">
+            <Icon name="file" size="md" /> Documentos del trámite
+          </h2>
+          <p className="card-subtitle">
+            Adjunta cédula, autorizaciones u otros documentos. Al finalizar se generará tu código QR.
+          </p>
+
+          {error && <div className="alert alert-error">{error}</div>}
+
+          {draftCheckinId && online ? (
+            <DocumentManager
+              checkinId={draftCheckinId}
+              embedded
+              title="Subir documentos"
+              hint="PDF, JPG o PNG (máx. 5 MB). Puedes agregar varios archivos."
+            />
+          ) : (
+            <div className="alert alert-warning">
+              Sin conexión — necesitas internet para adjuntar documentos y completar el trámite.
+            </div>
+          )}
+
+          <div className="form-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => setStep(2)}>Volver</button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              disabled={submitting || !online}
+              onClick={finalizeCheckin}
+            >
+              {submitting ? 'Registrando...' : 'Finalizar trámite y obtener QR'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {step === 4 && confirmation && (
+        <div className="card confirmation-card confirmation-qr-card">
+          <CheckinStepBar current="qr" />
           <div className="confirmation-icon-wrap">
             <Icon name="check" size="xl" />
           </div>
-          <h2>¡Check-In Registrado Exitosamente!</h2>
-          <p className="card-subtitle">Tu trámite ha sido registrado. Preséntate en aduana con tu código de confirmación.</p>
+          <h2>¡Trámite registrado!</h2>
+          <p className="card-subtitle">Presenta este código QR en aduana al llegar al paso fronterizo.</p>
 
-          <div className="confirmation-details">
+          <div className="confirmation-qr-hero">
             <CheckinQr
               checkinId={confirmation.localId || confirmation.id}
               initialStatus={confirmation.status || 'pending'}
               live={online}
+              size={220}
             />
+          </div>
+
+          <div className="confirmation-details">
             <div className="confirmation-code">
               <span className="code-label">Código de Confirmación</span>
               <span className="code-value">{confirmation.localId?.slice(0, 8).toUpperCase()}</span>
@@ -422,7 +469,7 @@ function TravelerCheckIn() {
             </div>
             <div className="detail-row">
               <span>Paso Fronterizo:</span>
-              <span>{BORDER_CROSSINGS.find(bc => bc.id === confirmation.borderCrossing)?.name || confirmation.borderCrossing || 'No especificado'}</span>
+              <span>{resolveCrossingName(confirmation.borderCrossing)}</span>
             </div>
             <div className="detail-row">
               <span>Estado:</span>

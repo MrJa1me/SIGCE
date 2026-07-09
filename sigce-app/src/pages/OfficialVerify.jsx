@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../App';
 import { getVerifyCheckin, updateCheckinStatus } from '../services/api';
 import { getLocalCheckins, updateLocalCheckinStatus, queueStatusChange } from '../services/offlineDb';
-import { getBorderCrossing } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import CheckinQr from '../components/CheckinQr';
 import StatusBadge from '../components/StatusBadge';
 import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
@@ -13,6 +13,7 @@ function OfficialVerify() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, online } = useAuth();
+  const { getBorderCrossing } = useBorderCrossings();
   const [checkin, setCheckin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);

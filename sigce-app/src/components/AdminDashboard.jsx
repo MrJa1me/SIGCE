@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { Icon } from './icons';
 import { CHECKIN_TYPE_LABELS, ROLE_LABELS, STATUS_LABELS } from './icons';
-import { getBorderCrossing } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 
 const STATUS_COLORS = {
   pending: '#856404',
@@ -22,13 +22,6 @@ const TYPE_COLORS = {
   pet: '#1e8449',
   general: '#5b2c6f',
 };
-
-function formatCrossingLabel(id) {
-  if (!id || id === 'sin-paso') return 'Sin paso';
-  const bc = getBorderCrossing(id);
-  if (bc) return bc.shortName;
-  return id.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-}
 
 function fillDailySeries(daily, days) {
   const map = Object.fromEntries((daily || []).map((d) => [d.date, d.count]));
@@ -150,7 +143,15 @@ function ChartCard({ title, icon, children, legend }) {
 }
 
 function AdminDashboard({ stats, loading, error }) {
+  const { getBorderCrossing } = useBorderCrossings();
   const periodDays = stats?.periodDays || 14;
+
+  const formatCrossingLabel = (id) => {
+    if (!id || id === 'sin-paso') return 'Sin paso';
+    const bc = getBorderCrossing(id);
+    if (bc) return bc.shortName;
+    return id.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
 
   const checkinsDaily = useMemo(
     () => fillDailySeries(stats?.checkins?.daily, periodDays),
@@ -184,7 +185,7 @@ function AdminDashboard({ stats, loading, error }) {
       value,
       color: getBorderCrossing(key)?.color || 'var(--primary)',
     })).sort((a, b) => b.value - a.value),
-    [stats]
+    [stats, getBorderCrossing]
   );
 
   const nationalityItems = useMemo(

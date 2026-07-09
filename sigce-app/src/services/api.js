@@ -202,3 +202,41 @@ export async function getAdminStats(days = 14) {
   }
   return res.json();
 }
+
+export async function fetchBorderCrossings() {
+  const res = await fetch(`${API_URL}/border-crossings`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'No se pudieron cargar los pasos fronterizos');
+  }
+  return res.json();
+}
+
+export async function getBorderCrossingPresets() {
+  const res = await fetch(`${API_URL}/admin/border-crossings/presets`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'No se pudo cargar el catálogo');
+  }
+  return res.json();
+}
+
+export async function createBorderCrossing(body) {
+  const res = await fetch(`${API_URL}/admin/border-crossings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al crear paso fronterizo');
+  return data;
+}
+
+export async function deleteBorderCrossing(id) {
+  const res = await fetch(`${API_URL}/admin/border-crossings/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al eliminar paso fronterizo');
+  return data;
+}

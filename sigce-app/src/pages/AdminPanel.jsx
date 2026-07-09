@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../App';
 import { Icon, ROLE_LABELS, roleIconName } from '../components/icons';
 import AdminDashboard from '../components/AdminDashboard';
+import AdminBorderCrossings from '../components/AdminBorderCrossings';
 import { getAdminStats } from '../services/api';
 
 const API_URL = '/api';
@@ -142,7 +143,7 @@ function AdminPanel() {
         <h2 className="page-title-with-icon">
           <Icon name="admin" size="md" /> Panel de Administración
         </h2>
-        <p>Estadísticas de uso y gestión de usuarios del sistema SIGCE</p>
+        <p>Estadísticas, usuarios y pasos fronterizos del sistema SIGCE</p>
         {!online && (
           <div className="alert alert-warning">
             Sin conexión al servidor — las estadísticas y gestión de usuarios no están disponibles
@@ -168,7 +169,24 @@ function AdminPanel() {
         >
           <Icon name="user" size="sm" /> Usuarios ({users.length})
         </button>
+        <button
+          type="button"
+          className={`admin-tab ${activeTab === 'crossings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('crossings')}
+        >
+          <Icon name="globe" size="sm" /> Pasos Fronterizos
+        </button>
       </div>
+
+      {activeTab === 'crossings' && (
+        <AdminBorderCrossings
+          online={online}
+          onMessage={(type, msg) => {
+            if (type === 'error') setError(msg);
+            else { setSuccess(msg); setError(''); }
+          }}
+        />
+      )}
 
       {activeTab === 'dashboard' && (
         <AdminDashboard stats={stats} loading={statsLoading} error={statsError} />

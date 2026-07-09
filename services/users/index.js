@@ -1,6 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const {
+  CROSSING_CATALOG,
+  SEED_CROSSINGS,
+  enrichCrossing,
+  buildCustomCrossing,
+  mapRowToApi,
+} = require('./borderCrossingData');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
@@ -16,7 +23,158 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
+async function runMigrations() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS border_crossings (
+      id VARCHAR(50) PRIMARY KEY,
+      name VARCHAR(150) NOT NULL,
+      short_name VARCHAR(80) NOT NULL,
+      region VARCHAR(100) NOT NULL,
+      country VARCHAR(50) NOT NULL,
+      location VARCHAR(200),
+      type VARCHAR(20) DEFAULT 'terrestrial',
+      code VARCHAR(10) NOT NULL,
+      description TEXT,
+      color VARCHAR(20),
+      color_light VARCHAR(20),
+      color_bg VARCHAR(20),
+      gradient VARCHAR(200),
+      daily_flow VARCHAR(50),
+      avg_wait VARCHAR(50),
+      altitude VARCHAR(50),
+      is_active BOOLEAN DEFAULT TRUE,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  const countRes = await pool.query('SELECT COUNT(*)::int AS count FROM border_crossings');
+  if (countRes.rows[0].count === 0) {
+    for (const row of SEED_CROSSINGS) {
+      await pool.query(
+        `INSERT INTO border_crossings (
+          id, name, short_name, region, country, location, type, code, description,
+          color, color_light, color_bg, gradient, daily_flow, avg_wait, altitude
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        ON CONFLICT (id) DO NOTHING`,
+        [
+          row.id, row.name, row.short_name, row.region, row.country, row.location,
+          row.type, row.code, row.description, row.color, row.color_light, row.color_bg,
+          row.gradient, row.daily_flow, row.avg_wait, row.altitude,
+        ]
+      );
+    }
+    console.log('📦 Border crossings seeded:', SEED_CROSSINGS.length);
+  }
+}
+
+runMigrations().catch((err) => console.error('Migration error:', err.message));
+
 app.get('/health', (req, res) => res.json({ service: 'users', status: 'ok' }));
+
+// ─── Border crossings (público) ───
+app.get('/api/border-crossings', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM border_crossings WHERE is_active = TRUE ORDER BY country, name`
+    );
+    res.json(result.rows.map(mapRowToApi));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── Admin: catálogo disponible ───
+app.get('/api/admin/border-crossings/presets', async (req, res) => {
+  try {
+    const existing = await pool.query('SELECT id FROM border_crossings WHERE is_active = TRUE');
+    const existingIds = new Set(existing.rows.map((r) => r.id));
+    const available = CROSSING_CATALOG
+      .filter((p) => !existingIds.has(p.id))
+      .map((p) => {
+        const enriched = enrichCrossing(p);
+        return mapRowToApi(enriched);
+      });
+    res.json(available);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/admin/border-crossings', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT * FROM border_crossings WHERE is_active = TRUE ORDER BY country, name`
+    );
+    res.json(result.rows.map(mapRowToApi));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/admin/border-crossings', async (req, res) => {
+  try {
+    const { presetId, name, country } = req.body;
+    let row;
+
+    if (presetId) {
+      const preset = CROSSING_CATALOG.find((p) => p.id === presetId);
+      if (!preset) return res.status(400).json({ error: 'Paso del catálogo no encontrado' });
+      row = enrichCrossing(preset);
+    } else if (name && country) {
+      row = buildCustomCrossing(name, country);
+    } else {
+      return res.status(400).json({ error: 'Selecciona un paso del catálogo o ingresa nombre y país vecino' });
+    }
+
+    const exists = await pool.query('SELECT id FROM border_crossings WHERE id = $1', [row.id]);
+    if (exists.rows.length > 0) {
+      return res.status(400).json({ error: 'Este paso fronterizo ya está registrado' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO border_crossings (
+        id, name, short_name, region, country, location, type, code, description,
+        color, color_light, color_bg, gradient, daily_flow, avg_wait, altitude
+      ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+      RETURNING *`,
+      [
+        row.id, row.name, row.short_name, row.region, row.country, row.location,
+        row.type, row.code, row.description, row.color, row.color_light, row.color_bg,
+        row.gradient, row.daily_flow, row.avg_wait, row.altitude,
+      ]
+    );
+    res.status(201).json(mapRowToApi(result.rows[0]));
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/border-crossings/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const inUse = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM checkins WHERE border_crossing = $1`,
+      [id]
+    );
+    if (inUse.rows[0].count > 0) {
+      return res.status(400).json({
+        error: `No se puede eliminar: hay ${inUse.rows[0].count} trámite(s) asociados a este paso`,
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE border_crossings SET is_active = FALSE WHERE id = $1 AND is_active = TRUE RETURNING id`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Paso fronterizo no encontrado' });
+    }
+    res.json({ success: true, id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // List all users
 app.get('/api/users', async (req, res) => {

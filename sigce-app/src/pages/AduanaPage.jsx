@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
-import { BORDER_CROSSINGS, getBorderCrossing } from '../services/borderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
 import DocumentManager from '../components/DocumentManager';
 import StatusBadge from '../components/StatusBadge';
 import CheckinQr from '../components/CheckinQr';
+import CheckinStepBar from '../components/CheckinStepBar';
 import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
 
 const buildInitialForm = (user) => ({
@@ -41,6 +42,7 @@ function AduanaPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, online } = useAuth();
+  const { getBorderCrossing } = useBorderCrossings();
   const aduana = getBorderCrossing(id);
 
   const [step, setStep] = useState('select');
@@ -75,8 +77,14 @@ function AduanaPage() {
     setStep('form');
   };
 
-  const handleSubmit = async (e) => {
+  const goToDocuments = (e) => {
     e.preventDefault();
+    setError('');
+    if (!e.currentTarget.reportValidity()) return;
+    setStep('documents');
+  };
+
+  const finalizeCheckin = async () => {
     setSubmitting(true);
     setError('');
 
@@ -230,14 +238,15 @@ function AduanaPage() {
 
       {step === 'form' && (
         <div className="aduana-content">
+          <CheckinStepBar current="data" />
           <div className="card checkin-form aduana-form-card" style={{ borderTop: `4px solid ${aduana.color}` }}>
-            <button className="btn-back" onClick={() => setStep('select')}>← Elegir otro trámite</button>
+            <button type="button" className="btn-back" onClick={() => setStep('select')}>← Elegir otro trámite</button>
             <div className="form-badge" style={{ background: aduana.gradient }}>
               <span className="aduana-card-code">{aduana.code}</span> {aduana.shortName} — {checkinTypeLabel(checkinType)}
             </div>
             <p className="card-subtitle">Completa tus datos. Si pierdes conexión, se guardarán localmente.</p>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={goToDocuments}>
               {error && <div className="alert alert-error">{error}</div>}
               {!online && (
                 <div className="alert alert-warning">Sin conexión — datos guardados localmente</div>
@@ -418,26 +427,10 @@ function AduanaPage() {
                 </div>
               </div>
 
-              {draftCheckinId && (
-                <div className="form-section">
-                  {online ? (
-                    <DocumentManager
-                      checkinId={draftCheckinId}
-                      embedded
-                      title="Documentos del trámite"
-                    />
-                  ) : (
-                    <div className="alert alert-warning">
-                      Sin conexión — podrás adjuntar documentos cuando tengas internet, antes de enviar el trámite.
-                    </div>
-                  )}
-                </div>
-              )}
-
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setStep('select')}>Cancelar</button>
-                <button type="submit" className="btn btn-primary" disabled={submitting} style={{ background: aduana.color }}>
-                  {submitting ? 'Guardando...' : `Check-In en ${aduana.shortName}`}
+                <button type="submit" className="btn btn-primary" style={{ background: aduana.color }}>
+                  Siguiente: adjuntar documentos →
                 </button>
               </div>
             </form>
@@ -445,21 +438,74 @@ function AduanaPage() {
         </div>
       )}
 
+      {step === 'documents' && (
+        <div className="aduana-content">
+          <CheckinStepBar current="documents" />
+          <div className="card checkin-form aduana-form-card" style={{ borderTop: `4px solid ${aduana.color}` }}>
+            <button type="button" className="btn-back" onClick={() => setStep('form')}>← Volver a los datos</button>
+            <div className="form-badge" style={{ background: aduana.gradient }}>
+              <span className="aduana-card-code">{aduana.code}</span> {aduana.shortName} — {checkinTypeLabel(checkinType)}
+            </div>
+            <h2 className="page-title-with-icon">
+              <Icon name="file" size="md" /> Documentos del trámite
+            </h2>
+            <p className="card-subtitle">
+              Adjunta cédula, autorizaciones u otros documentos requeridos. Luego se generará tu código QR.
+            </p>
+
+            {error && <div className="alert alert-error">{error}</div>}
+
+            {draftCheckinId && online ? (
+              <DocumentManager
+                checkinId={draftCheckinId}
+                embedded
+                title="Subir documentos"
+                hint="PDF, JPG o PNG (máx. 5 MB). Puedes agregar varios archivos antes de finalizar."
+              />
+            ) : (
+              <div className="alert alert-warning">
+                Sin conexión — necesitas internet para adjuntar documentos y completar el trámite.
+              </div>
+            )}
+
+            <div className="form-actions">
+              <button type="button" className="btn btn-secondary" onClick={() => setStep('form')}>Volver</button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={submitting || !online}
+                style={{ background: aduana.color }}
+                onClick={finalizeCheckin}
+              >
+                {submitting ? 'Registrando...' : 'Finalizar trámite y obtener QR'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {step === 'confirmation' && confirmation && (
         <div className="aduana-content">
-          <div className="card confirmation-card" style={{ borderTop: `4px solid ${aduana.color}` }}>
+          <CheckinStepBar current="qr" />
+          <div className="card confirmation-card confirmation-qr-card" style={{ borderTop: `4px solid ${aduana.color}` }}>
             <div className="confirmation-icon-wrap">
               <Icon name="check" size="xl" />
             </div>
-            <h2>¡Check-In Registrado!</h2>
-            <p className="card-subtitle">Preséntate en <strong>{aduana.name}</strong> con tu código de confirmación.</p>
+            <h2>¡Trámite registrado!</h2>
+            <p className="card-subtitle">
+              Presenta este código QR en <strong>{aduana.name}</strong> al llegar al paso fronterizo.
+            </p>
 
-            <div className="confirmation-details">
+            <div className="confirmation-qr-hero">
               <CheckinQr
                 checkinId={confirmation.localId || confirmation.id}
                 initialStatus={confirmation.status || 'pending'}
                 live={online}
+                size={220}
               />
+            </div>
+
+            <div className="confirmation-details">
               <div className="confirmation-code">
                 <span className="code-label">Código de Confirmación</span>
                 <span className="code-value">{confirmation.localId?.slice(0, 8).toUpperCase()}</span>

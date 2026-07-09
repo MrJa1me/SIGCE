@@ -11,11 +11,11 @@ import TravelerDashboard from './pages/TravelerDashboard';
 import TravelerCheckIn from './pages/TravelerCheckIn';
 import OfficialPanel from './pages/OfficialPanel';
 import OfficialDetail from './pages/OfficialDetail';
-import OfficialNewCheckin from './pages/OfficialNewCheckin';
 import OfficialQrScan from './pages/OfficialQrScan';
 import OfficialVerify from './pages/OfficialVerify';
 import AdminPanel from './pages/AdminPanel';
 import AppShell from './components/AppShell';
+import { BorderCrossingsProvider } from './context/BorderCrossingsContext';
 import { startPeriodicSync, stopPeriodicSync, isOnline, onNetworkChange } from './services/syncService';
 import './App.css';
 
@@ -83,6 +83,7 @@ function App() {
 
   return (
     <AuthContext.Provider value={{ user, login, logout, online, syncStatus }}>
+      <BorderCrossingsProvider>
       <AppShell syncStatus={syncStatus}>
         <Routes>
           <Route path="/" element={<RoleSelect />} />
@@ -98,12 +99,12 @@ function App() {
           <Route path="/oficial" element={<ProtectedRoute allowedRole="official"><OfficialPanel /></ProtectedRoute>} />
           <Route path="/oficial/escanear" element={<ProtectedRoute allowedRole="official"><OfficialQrScan /></ProtectedRoute>} />
           <Route path="/oficial/verificar/:id" element={<ProtectedRoute allowedRole="official"><OfficialVerify /></ProtectedRoute>} />
-          <Route path="/oficial/nuevo" element={<ProtectedRoute allowedRole="official"><OfficialNewCheckin /></ProtectedRoute>} />
           <Route path="/oficial/:id" element={<ProtectedRoute allowedRole="official"><OfficialDetail /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminPanel /></ProtectedRoute>} />
           <Route path="*" element={<div className="page-error"><h2>404 — Página no encontrada</h2><p>¿Te perdiste en la frontera?</p></div>} />
         </Routes>
       </AppShell>
+      </BorderCrossingsProvider>
     </AuthContext.Provider>
   );
 }

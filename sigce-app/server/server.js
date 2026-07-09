@@ -3,6 +3,13 @@ const cors = require('cors');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
+const {
+  CROSSING_CATALOG,
+  SEED_CROSSINGS,
+  enrichCrossing,
+  buildCustomCrossing,
+  mapRowToApi,
+} = require('../../services/users/borderCrossingData');
 
 const app = express();
 const PORT = 3001;
@@ -15,13 +22,22 @@ app.use(express.json());
 function readData() {
   try {
     if (!fs.existsSync(DATA_FILE)) {
-      const initial = { users: [], checkins: [] };
+      const initial = {
+        users: [],
+        checkins: [],
+        borderCrossings: SEED_CROSSINGS.map((row) => mapRowToApi(row)),
+      };
       fs.writeFileSync(DATA_FILE, JSON.stringify(initial, null, 2));
       return initial;
     }
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    const data = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+    if (!data.borderCrossings) {
+      data.borderCrossings = SEED_CROSSINGS.map((row) => mapRowToApi(row));
+      writeData(data);
+    }
+    return data;
   } catch {
-    return { users: [], checkins: [] };
+    return { users: [], checkins: [], borderCrossings: SEED_CROSSINGS.map((row) => mapRowToApi(row)) };
   }
 }
 
@@ -186,6 +202,68 @@ app.get('/api/admin/stats', (req, res) => {
   const days = Math.min(Math.max(parseInt(req.query.days, 10) || 14, 7), 90);
   const data = readData();
   res.json(computeAdminStats(data, days));
+});
+
+// ---------- Border Crossings ----------
+app.get('/api/border-crossings', (req, res) => {
+  const data = readData();
+  res.json((data.borderCrossings || []).sort((a, b) => a.country.localeCompare(b.country) || a.name.localeCompare(b.name)));
+});
+
+app.get('/api/admin/border-crossings/presets', (req, res) => {
+  const data = readData();
+  const existing = new Set((data.borderCrossings || []).map((c) => c.id));
+  const available = CROSSING_CATALOG
+    .filter((p) => !existing.has(p.id))
+    .map((p) => mapRowToApi(enrichCrossing(p)));
+  res.json(available);
+});
+
+app.get('/api/admin/border-crossings', (req, res) => {
+  const data = readData();
+  res.json(data.borderCrossings || []);
+});
+
+app.post('/api/admin/border-crossings', (req, res) => {
+  const data = readData();
+  const { presetId, name, country } = req.body;
+  let row;
+  try {
+    if (presetId) {
+      const preset = CROSSING_CATALOG.find((p) => p.id === presetId);
+      if (!preset) return res.status(400).json({ error: 'Paso del catálogo no encontrado' });
+      row = enrichCrossing(preset);
+    } else if (name && country) {
+      row = buildCustomCrossing(name, country);
+    } else {
+      return res.status(400).json({ error: 'Selecciona un paso del catálogo o ingresa nombre y país vecino' });
+    }
+    if ((data.borderCrossings || []).some((c) => c.id === row.id)) {
+      return res.status(400).json({ error: 'Este paso fronterizo ya está registrado' });
+    }
+    const created = mapRowToApi(row);
+    data.borderCrossings = [...(data.borderCrossings || []), created];
+    writeData(data);
+    res.status(201).json(created);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/admin/border-crossings/:id', (req, res) => {
+  const data = readData();
+  const id = req.params.id;
+  const inUse = (data.checkins || []).filter((c) => c.borderCrossing === id).length;
+  if (inUse > 0) {
+    return res.status(400).json({ error: `No se puede eliminar: hay ${inUse} trámite(s) asociados` });
+  }
+  const before = (data.borderCrossings || []).length;
+  data.borderCrossings = (data.borderCrossings || []).filter((c) => c.id !== id);
+  if (data.borderCrossings.length === before) {
+    return res.status(404).json({ error: 'Paso fronterizo no encontrado' });
+  }
+  writeData(data);
+  res.json({ success: true, id });
 });
 
 // ---------- Check-Ins ----------

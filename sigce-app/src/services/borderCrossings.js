@@ -1,4 +1,5 @@
-export const BORDER_CROSSINGS = [
+/** Fallback local si el servidor no está disponible */
+export const FALLBACK_BORDER_CROSSINGS = [
   {
     id: 'los-libertadores',
     name: 'Paso Los Libertadores',
@@ -11,8 +12,9 @@ export const BORDER_CROSSINGS = [
     gradient: 'linear-gradient(135deg, #1a5276, #2980b9)',
     code: 'LL',
     shortName: 'Los Libertadores',
+    location: 'Cordillera de los Andes, comuna de Los Andes',
     description: 'Principal paso entre Chile y Argentina. Conecta Santiago con Mendoza.',
-    stats: { dailyFlow: '12,000+', avgWait: '4-8 hrs', altitude: '3,175 m s.n.m.' }
+    stats: { dailyFlow: '12,000+', avgWait: '4-8 hrs', altitude: '3,175 m s.n.m.' },
   },
   {
     id: 'jama',
@@ -26,8 +28,9 @@ export const BORDER_CROSSINGS = [
     gradient: 'linear-gradient(135deg, #7b241c, #c0392b)',
     code: 'PJ',
     shortName: 'Paso Jama',
+    location: 'Provincia de Jujuy — El Loa',
     description: 'Cruce de altura en el norte de Chile, conecta la puna con Argentina.',
-    stats: { dailyFlow: '3,500+', avgWait: '1-3 hrs', altitude: '4,200 m s.n.m.' }
+    stats: { dailyFlow: '3,500+', avgWait: '1-3 hrs', altitude: '4,200 m s.n.m.' },
   },
   {
     id: 'agua-negra',
@@ -41,8 +44,9 @@ export const BORDER_CROSSINGS = [
     gradient: 'linear-gradient(135deg, #1e8449, #27ae60)',
     code: 'AN',
     shortName: 'Agua Negra',
-    description: 'Paso cordillerano que une la Región de Coquimbo con San Juan, Argentina.',
-    stats: { dailyFlow: '2,000+', avgWait: '1-2 hrs', altitude: '4,780 m s.n.m.' }
+    location: 'San Juan — Coquimbo',
+    description: 'Paso cordillerano que une Coquimbo con San Juan, Argentina.',
+    stats: { dailyFlow: '2,000+', avgWait: '1-2 hrs', altitude: '4,780 m s.n.m.' },
   },
   {
     id: 'cardenal-samore',
@@ -56,11 +60,115 @@ export const BORDER_CROSSINGS = [
     gradient: 'linear-gradient(135deg, #1a5276, #2c3e50)',
     code: 'CS',
     shortName: 'Cardenal Samoré',
-    description: 'Paso patagónico clave que conecta Puerto Montt con Bariloche, Argentina.',
-    stats: { dailyFlow: '4,000+', avgWait: '2-4 hrs', altitude: '1,210 m s.n.m.' }
-  }
+    location: 'Osorno — Bariloche',
+    description: 'Paso patagónico que conecta Puerto Montt con Bariloche.',
+    stats: { dailyFlow: '4,000+', avgWait: '2-4 hrs', altitude: '1,210 m s.n.m.' },
+  },
+  {
+    id: 'pino-hachado',
+    name: 'Paso Pino Hachado',
+    region: 'Región de La Araucanía',
+    country: 'Argentina',
+    type: 'terrestrial',
+    color: '#1a5276',
+    colorLight: '#2980b9',
+    colorBg: '#eaf2f8',
+    gradient: 'linear-gradient(135deg, #1a5276, #2980b9)',
+    code: 'PH',
+    shortName: 'Pino Hachado',
+    location: 'Lonquimay — Neuquén',
+    description: 'Conecta la Araucanía con la Patagonia argentina.',
+    stats: { dailyFlow: '1,800+', avgWait: '1-3 hrs', altitude: '1,884 m s.n.m.' },
+  },
+  {
+    id: 'cristo-redentor',
+    name: 'Paso Cristo Redentor',
+    region: "Región de O'Higgins",
+    country: 'Argentina',
+    type: 'terrestrial',
+    color: '#1a5276',
+    colorLight: '#2980b9',
+    colorBg: '#eaf2f8',
+    gradient: 'linear-gradient(135deg, #1a5276, #2980b9)',
+    code: 'CR',
+    shortName: 'Cristo Redentor',
+    location: 'Los Andes — Uspallata',
+    description: 'Ruta histórica Los Andes–Mendoza.',
+    stats: { dailyFlow: '5,500+', avgWait: '2-5 hrs', altitude: '3,832 m s.n.m.' },
+  },
+  {
+    id: 'chacalluta',
+    name: 'Paso Chacalluta',
+    region: 'Región de Arica y Parinacota',
+    country: 'Perú',
+    type: 'terrestrial',
+    color: '#922b21',
+    colorLight: '#c0392b',
+    colorBg: '#fdedec',
+    gradient: 'linear-gradient(135deg, #922b21, #c0392b)',
+    code: 'CH',
+    shortName: 'Chacalluta',
+    location: 'Arica — Tacna',
+    description: 'Principal cruce terrestre Chile–Perú.',
+    stats: { dailyFlow: '6,000+', avgWait: '1-2 hrs', altitude: '35 m s.n.m.' },
+  },
+  {
+    id: 'santa-rosa',
+    name: 'Paso Santa Rosa',
+    region: 'Región de Arica y Parinacota',
+    country: 'Perú',
+    type: 'terrestrial',
+    color: '#922b21',
+    colorLight: '#c0392b',
+    colorBg: '#fdedec',
+    gradient: 'linear-gradient(135deg, #922b21, #c0392b)',
+    code: 'SR',
+    shortName: 'Santa Rosa',
+    location: 'Putre — Tacna',
+    description: 'Paso de altura en la frontera norte con Tacna.',
+    stats: { dailyFlow: '800+', avgWait: '30-90 min', altitude: '3,600 m s.n.m.' },
+  },
+  {
+    id: 'chungara-tambo-quemado',
+    name: 'Paso Chungará–Tambo Quemado',
+    region: 'Región de Arica y Parinacota',
+    country: 'Bolivia',
+    type: 'terrestrial',
+    color: '#1e6f3d',
+    colorLight: '#27ae60',
+    colorBg: '#eafaf1',
+    gradient: 'linear-gradient(135deg, #1e6f3d, #27ae60)',
+    code: 'CT',
+    shortName: 'Chungará–Tambo Quemado',
+    location: 'Lauca — Oruro',
+    description: 'Cruce altiplánico Chile–Bolivia.',
+    stats: { dailyFlow: '600+', avgWait: '45-90 min', altitude: '4,687 m s.n.m.' },
+  },
+  {
+    id: 'ollague',
+    name: 'Paso Ollagüe',
+    region: 'Región de Antofagasta',
+    country: 'Bolivia',
+    type: 'terrestrial',
+    color: '#1e6f3d',
+    colorLight: '#27ae60',
+    colorBg: '#eafaf1',
+    gradient: 'linear-gradient(135deg, #1e6f3d, #27ae60)',
+    code: 'OL',
+    shortName: 'Ollagüe',
+    location: 'Ollagüe — Potosí',
+    description: 'Paso minero y comercial hacia Bolivia.',
+    stats: { dailyFlow: '400+', avgWait: '30-60 min', altitude: '3,695 m s.n.m.' },
+  },
 ];
 
-export function getBorderCrossing(id) {
-  return BORDER_CROSSINGS.find(bc => bc.id === id);
+/** @deprecated Usar useBorderCrossings() — se mantiene por compatibilidad */
+export const BORDER_CROSSINGS = FALLBACK_BORDER_CROSSINGS;
+
+export function getBorderCrossing(id, list = FALLBACK_BORDER_CROSSINGS) {
+  return list.find((bc) => bc.id === id);
+}
+
+export function resolveCrossingName(id, list = FALLBACK_BORDER_CROSSINGS) {
+  return getBorderCrossing(id, list)?.name || id || '—';
 }
