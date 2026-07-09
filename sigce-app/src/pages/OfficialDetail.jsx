@@ -6,6 +6,7 @@ import { getCheckin, updateCheckinStatus, updatePdiReview } from '../services/ap
 import StatusBadge from '../components/StatusBadge';
 import DocumentManager from '../components/DocumentManager';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { Icon, CheckinTypeIcon, checkinTypeTitle, yesNo } from '../components/icons';
 
 function OfficialDetail() {
   const { id } = useParams();
@@ -48,9 +49,9 @@ function OfficialDetail() {
     setActionLoading(true);
     try {
       const comment = prompt(
-        status === 'cleared' ? '✅ Comentario (opcional):' :
-        status === 'flagged' ? '⚠️ Motivo de la revisión:' :
-        '❌ Motivo de la denegación:',
+        status === 'cleared' ? 'Comentario (opcional):' :
+        status === 'flagged' ? 'Motivo de la revisión:' :
+        'Motivo de la denegación:',
         ''
       );
       if ((status === 'denied' || status === 'flagged') && !comment) {
@@ -59,7 +60,6 @@ function OfficialDetail() {
         return;
       }
       const pdiReview = { status, reviewedBy: user.name, comment: comment || undefined };
-      // Save to server if online
       if (online) {
         try {
           const result = await updatePdiReview(checkin.id || checkin.localId, pdiReview);
@@ -68,7 +68,6 @@ function OfficialDetail() {
           throw new Error('Error al conectar con el servidor');
         }
       } else {
-        // Save locally as fallback
         const localData = await getLocalCheckins();
         const localCheckin = localData.find(c => c.localId === id || c.id === id);
         if (localCheckin) {
@@ -87,9 +86,9 @@ function OfficialDetail() {
     setActionLoading(true);
     try {
       const comment = prompt(
-        newStatus === 'accepted' ? '✅ Agregar comentario (opcional):' :
-        newStatus === 'rejected' ? '❌ Motivo del rechazo (obligatorio):' :
-        '🔍 Motivo de la revisión (opcional):',
+        newStatus === 'accepted' ? 'Agregar comentario (opcional):' :
+        newStatus === 'rejected' ? 'Motivo del rechazo (obligatorio):' :
+        'Motivo de la revisión (opcional):',
         ''
       );
 
@@ -124,8 +123,22 @@ function OfficialDetail() {
     setActionLoading(false);
   };
 
+  const pdiIconName = (status) => {
+    if (status === 'cleared') return 'check';
+    if (status === 'flagged') return 'warning';
+    return 'x';
+  };
+
   if (loading) return <div className="page-container"><div className="loading">Cargando trámite...</div></div>;
-  if (!checkin) return <div className="page-container"><div className="card empty-state"><h3>❌ Trámite no encontrado</h3><a href="/oficial" className="btn btn-secondary">Volver al panel</a></div></div>;
+  if (!checkin) return (
+    <div className="page-container">
+      <div className="card empty-state">
+        <Icon name="x" size="xl" className="empty-icon-svg" />
+        <h3>Trámite no encontrado</h3>
+        <a href="/oficial" className="btn btn-secondary">Volver al panel</a>
+      </div>
+    </div>
+  );
 
   return (
     <div className="page-container">
@@ -134,19 +147,17 @@ function OfficialDetail() {
       <div className="card detail-card">
         <div className="detail-header">
           <div>
-            <h2>
-              {checkin.checkinType === 'vehicle' ? '🚗 Trámite Vehicular' :
-               checkin.checkinType === 'minor' ? '👶 Trámite Menor de Edad' :
-               checkin.checkinType === 'pet' ? '🐾 Trámite Mascota' : '📋 Trámite General'}
+            <h2 className="page-title-with-icon">
+              <CheckinTypeIcon type={checkin.checkinType} size="md" />
+              {checkinTypeTitle(checkin.checkinType)}
             </h2>
             <p className="card-subtitle">Código: <code>{(checkin.localId || checkin.id)?.slice(0, 8).toUpperCase()}</code></p>
           </div>
           <StatusBadge status={checkin.status} />
         </div>
 
-        {/* Traveler info */}
         <div className="detail-section">
-          <h3>👤 Datos del Viajero</h3>
+          <h3 className="page-title-with-icon"><Icon name="user" size="sm" /> Datos del Viajero</h3>
           <div className="detail-grid">
             <div><strong>Nombre:</strong> {checkin.userName || 'Visitante'}</div>
             <div><strong>RUT:</strong> {checkin.rut || '—'}</div>
@@ -157,23 +168,27 @@ function OfficialDetail() {
           </div>
         </div>
 
-        {/* Type-specific details */}
         {checkin.checkinType === 'vehicle' && (
           <div className="detail-section">
-            <h3>🚗 Datos del Vehículo</h3>
+            <h3 className="page-title-with-icon"><Icon name="vehicle" size="sm" /> Datos del Vehículo</h3>
             <div className="detail-grid">
               <div><strong>Patente:</strong> <span className="patent-highlight">{checkin.details?.patent || '—'}</span></div>
               <div><strong>Marca:</strong> {checkin.details?.brand || '—'}</div>
               <div><strong>Modelo:</strong> {checkin.details?.model || '—'}</div>
               <div><strong>Año:</strong> {checkin.details?.vehicleYear || '—'}</div>
-              <div><strong>Tipo:</strong> {checkin.details?.vehicleType === 'diplomatic' ? '🚩 Diplomático (90 días)' : 'Particular (180 días)'}</div>
+              <div>
+                <strong>Tipo:</strong>{' '}
+                {checkin.details?.vehicleType === 'diplomatic' ? (
+                  <><Icon name="flag" size="xs" /> Diplomático (90 días)</>
+                ) : 'Particular (180 días)'}
+              </div>
             </div>
           </div>
         )}
 
         {checkin.checkinType === 'minor' && (
           <div className="detail-section">
-            <h3>👶 Datos del Menor</h3>
+            <h3 className="page-title-with-icon"><Icon name="minor" size="sm" /> Datos del Menor</h3>
             <div className="detail-grid">
               <div><strong>Nombre:</strong> {checkin.details?.minorName || '—'}</div>
               <div><strong>RUT:</strong> {checkin.details?.minorRut || '—'}</div>
@@ -182,35 +197,34 @@ function OfficialDetail() {
                 checkin.details?.minorAccompaniedBy === 'one_parent' ? 'Un progenitor' :
                 'Sin compañía de padres'
               }</div>
-              <div><strong>Autorización notarial:</strong> {checkin.details?.hasMinorAuthorization ? '✅ Sí' : '❌ No'}</div>
+              <div><strong>Autorización notarial:</strong> {yesNo(checkin.details?.hasMinorAuthorization)}</div>
             </div>
           </div>
         )}
 
         {checkin.checkinType === 'pet' && (
           <div className="detail-section">
-            <h3>🐾 Datos de la Mascota</h3>
+            <h3 className="page-title-with-icon"><Icon name="pet" size="sm" /> Datos de la Mascota</h3>
             <div className="detail-grid">
               <div><strong>Tipo:</strong> {checkin.details?.petType === 'dog' ? 'Perro' : checkin.details?.petType === 'cat' ? 'Gato' : checkin.details?.petType || '—'}</div>
               <div><strong>Nombre:</strong> {checkin.details?.petName || '—'}</div>
               <div><strong>Raza:</strong> {checkin.details?.petBreed || '—'}</div>
-              <div><strong>Vacunas al día:</strong> {checkin.details?.petHasVaccines ? '✅ Sí' : '❌ No'}</div>
-              <div><strong>Microchip:</strong> {checkin.details?.petHasMicrochip ? '✅ Sí' : '❌ No'}</div>
+              <div><strong>Vacunas al día:</strong> {yesNo(checkin.details?.petHasVaccines)}</div>
+              <div><strong>Microchip:</strong> {yesNo(checkin.details?.petHasMicrochip)}</div>
             </div>
           </div>
         )}
 
         {checkin.checkinType === 'general' && (
           <div className="detail-section">
-            <h3>📋 Trámite General</h3>
+            <h3 className="page-title-with-icon"><Icon name="general" size="sm" /> Trámite General</h3>
             <p>{checkin.comments || 'Sin descripción'}</p>
           </div>
         )}
 
-        {/* Comments */}
         {checkin.comments && !['general'].includes(checkin.checkinType) && (
           <div className="detail-section">
-            <h3>💬 Comentarios del Viajero</h3>
+            <h3 className="page-title-with-icon"><Icon name="comment" size="sm" /> Comentarios del Viajero</h3>
             <p>{checkin.comments}</p>
           </div>
         )}
@@ -219,62 +233,74 @@ function OfficialDetail() {
           <DocumentManager
             checkinId={checkin.localId || checkin.id}
             canUpload={false}
-            title="📎 Documentos del viajero"
+            title="Documentos del viajero"
           />
         </div>
 
-        {/* PDI Review — Official Only */}
         <div className="detail-section pdi-review-section">
-          <h3>🕵️ Control Migratorio — PDI</h3>
+          <h3 className="page-title-with-icon"><Icon name="shield" size="sm" /> Control Migratorio — PDI</h3>
           <p className="pdi-subtitle">Revisión migratoria exclusiva del funcionario. Determina si el viajero puede ingresar al país.</p>
-          
+
           {checkin.pdiReview?.status ? (
             <div className={`pdi-result pdi-${checkin.pdiReview.status}`}>
               <div className="pdi-result-header">
                 <span className="pdi-result-icon">
-                  {checkin.pdiReview.status === 'cleared' ? '✅' : checkin.pdiReview.status === 'flagged' ? '⚠️' : '❌'}
+                  <Icon name={pdiIconName(checkin.pdiReview.status)} size="md" />
                 </span>
                 <span className="pdi-result-label">
-                  {checkin.pdiReview.status === 'cleared' ? 'INGRESO AUTORIZADO' : checkin.pdiReview.status === 'flagged' ? 'EN REVISIÓN' : 'INGRESO DENEGADO'}
+                  {checkin.pdiReview.status === 'cleared' ? 'INGRESO AUTORIZADO' :
+                   checkin.pdiReview.status === 'flagged' ? 'EN REVISIÓN' : 'INGRESO DENEGADO'}
                 </span>
               </div>
-              {checkin.pdiReview.reviewedBy && <div className="pdi-result-meta">Revisado por: {checkin.pdiReview.reviewedBy} — {new Date(checkin.pdiReview.reviewedAt).toLocaleString('es-CL')}</div>}
-              {checkin.pdiReview.comment && <div className="pdi-result-comment">📌 {checkin.pdiReview.comment}</div>}
+              {checkin.pdiReview.reviewedBy && (
+                <div className="pdi-result-meta">
+                  Revisado por: {checkin.pdiReview.reviewedBy} — {new Date(checkin.pdiReview.reviewedAt).toLocaleString('es-CL')}
+                </div>
+              )}
+              {checkin.pdiReview.comment && (
+                <div className="pdi-result-comment">{checkin.pdiReview.comment}</div>
+              )}
             </div>
           ) : (
-            <div className="pdi-pending">⏳ Pendiente de revisión migratoria</div>
+            <div className="pdi-pending">Pendiente de revisión migratoria</div>
           )}
 
           {checkin.status === 'accepted' && !checkin.pdiReview?.status && (
             <div className="pdi-actions">
-              <button className="btn btn-accept" onClick={() => handlePdiReview('cleared')}>✅ Autorizar Ingreso</button>
-              <button className="btn btn-review" onClick={() => handlePdiReview('flagged')}>⚠️ Marcar para Revisión</button>
-              <button className="btn btn-reject" onClick={() => handlePdiReview('denied')}>❌ Denegar Ingreso</button>
+              <button className="btn btn-accept" onClick={() => handlePdiReview('cleared')} disabled={actionLoading}>
+                Autorizar Ingreso
+              </button>
+              <button className="btn btn-review" onClick={() => handlePdiReview('flagged')} disabled={actionLoading}>
+                Marcar para Revisión
+              </button>
+              <button className="btn btn-reject" onClick={() => handlePdiReview('denied')} disabled={actionLoading}>
+                Denegar Ingreso
+              </button>
             </div>
           )}
           {checkin.pdiReview?.status && (
             <div className="pdi-re-reviewed">
-              <button className="btn btn-secondary btn-sm" onClick={() => handlePdiReview('cleared')}>🔄 Actualizar revisión</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => handlePdiReview('cleared')} disabled={actionLoading}>
+                Actualizar revisión
+              </button>
             </div>
           )}
         </div>
 
-        {/* Processing history */}
         <div className="detail-section">
-          <h3>📅 Historial</h3>
+          <h3 className="page-title-with-icon"><Icon name="clock" size="sm" /> Historial</h3>
           <div className="detail-grid">
-            <div><strong>Origen:</strong> {checkin.source === 'inperson' ? '📝 Trámite Presencial' : '🌐 Check-In Online'}</div>
+            <div><strong>Origen:</strong> {checkin.source === 'inperson' ? 'Trámite Presencial' : 'Check-In Online'}</div>
             {checkin.createdBy && <div><strong>Creado por:</strong> {checkin.createdBy}</div>}
             <div><strong>Creado:</strong> {new Date(checkin.createdAt).toLocaleString('es-CL')}</div>
             {checkin.processedAt && <div><strong>Procesado:</strong> {new Date(checkin.processedAt).toLocaleString('es-CL')}</div>}
             {checkin.processedBy && <div><strong>Procesado por:</strong> {checkin.processedBy}</div>}
             {checkin.syncedAt && <div><strong>Última sincronización:</strong> {new Date(checkin.syncedAt).toLocaleString('es-CL')}</div>}
-            {!checkin.synced && <div><strong>Sincronización:</strong> 📴 Pendiente</div>}
-            {checkin.comment && <div><strong>Comentario oficial:</strong> 📌 {checkin.comment}</div>}
+            {!checkin.synced && <div><strong>Sincronización:</strong> Pendiente</div>}
+            {checkin.comment && <div><strong>Comentario oficial:</strong> {checkin.comment}</div>}
           </div>
         </div>
 
-        {/* Actions */}
         {(checkin.status === 'pending' || checkin.status === 'in_review') && (
           <div className="detail-actions">
             <h3>Acciones</h3>
@@ -284,21 +310,21 @@ function OfficialDetail() {
                 onClick={() => handleAction('accepted')}
                 disabled={actionLoading}
               >
-                ✅ Aprobar Trámite
+                Aprobar Trámite
               </button>
               <button
                 className="btn btn-review btn-lg"
                 onClick={() => handleAction('in_review')}
                 disabled={actionLoading}
               >
-                🔍 Enviar a Revisión
+                Enviar a Revisión
               </button>
               <button
                 className="btn btn-reject btn-lg"
                 onClick={() => handleAction('rejected')}
                 disabled={actionLoading}
               >
-                ❌ Rechazar Trámite
+                Rechazar Trámite
               </button>
             </div>
           </div>
@@ -306,12 +332,12 @@ function OfficialDetail() {
 
         {checkin.status === 'accepted' && (
           <div className="detail-section alert alert-success">
-            ✅ Este trámite fue <strong>aprobado</strong> por {checkin.processedBy}
+            Este trámite fue <strong>aprobado</strong> por {checkin.processedBy}
           </div>
         )}
         {checkin.status === 'rejected' && (
           <div className="detail-section alert alert-error">
-            ❌ Este trámite fue <strong>rechazado</strong> por {checkin.processedBy}
+            Este trámite fue <strong>rechazado</strong> por {checkin.processedBy}
             {checkin.comment && <p>Motivo: {checkin.comment}</p>}
           </div>
         )}

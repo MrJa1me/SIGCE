@@ -3,6 +3,8 @@ import { useAuth } from '../App';
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import StatusBadge from '../components/StatusBadge';
+import { Icon, CheckinTypeIcon, checkinTypeLabel, checkinTypeTitle } from '../components/icons';
 
 const buildInitialForm = (user) => ({
   fullName: user?.name || '',
@@ -11,24 +13,20 @@ const buildInitialForm = (user) => ({
   email: user?.email || '',
   phone: '',
   checkinType: 'vehicle',
-  // Vehicle fields
   patent: '',
   brand: '',
   model: '',
   vehicleYear: '',
   vehicleType: 'particular',
-  // Minor fields
   minorName: '',
   minorRut: '',
   minorAccompaniedBy: 'both',
   hasMinorAuthorization: false,
-  // Pet fields
   petType: 'dog',
   petName: '',
   petBreed: '',
   petHasVaccines: false,
   petHasMicrochip: false,
-  // General
   borderCrossing: '',
   comments: '',
 });
@@ -36,7 +34,7 @@ const buildInitialForm = (user) => ({
 function TravelerCheckIn() {
   const { user, online } = useAuth();
   const [form, setForm] = useState(() => buildInitialForm(user));
-  const [step, setStep] = useState(1); // 1: type select, 2: form, 3: confirmation
+  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [confirmation, setConfirmation] = useState(null);
   const [error, setError] = useState('');
@@ -91,16 +89,13 @@ function TravelerCheckIn() {
     };
 
     try {
-      // Save locally first (always)
       const localSaved = await saveCheckinLocally(checkinData);
 
-      // Try to sync with server if online
       if (online) {
         try {
           await createCheckin(checkinData);
           await saveCheckinLocally({ ...checkinData, synced: true, syncedAt: new Date().toISOString() });
         } catch {
-          // Will sync later
           console.log('Check-in guardado localmente, pendiente de sync');
         }
       }
@@ -122,7 +117,6 @@ function TravelerCheckIn() {
 
   return (
     <div className="page-container">
-      {/* Step indicator */}
       <div className="step-indicator">
         <div className={`step ${step >= 1 ? 'active' : ''}`}>
           <div className="step-num">1</div>
@@ -140,29 +134,28 @@ function TravelerCheckIn() {
         </div>
       </div>
 
-      {/* Step 1: Choose type */}
       {step === 1 && (
         <div className="card checkin-type-select">
           <h2>Check-In Anticipado</h2>
           <p className="card-subtitle">Selecciona el tipo de trámite que deseas realizar antes de llegar a la aduana</p>
           <div className="type-grid">
             <button className="type-card vehicle" onClick={() => { updateField('checkinType', 'vehicle'); setStep(2); }}>
-              <span className="type-icon">🚗</span>
+              <span className="type-icon"><CheckinTypeIcon type="vehicle" size="lg" /></span>
               <span className="type-label">Vehículo</span>
               <span className="type-desc">Salida/entrada temporal de vehículo particular o diplomático</span>
             </button>
             <button className="type-card minor" onClick={() => { updateField('checkinType', 'minor'); setStep(2); }}>
-              <span className="type-icon">👶</span>
+              <span className="type-icon"><CheckinTypeIcon type="minor" size="lg" /></span>
               <span className="type-label">Menor de Edad</span>
               <span className="type-desc">Autorización para viaje de menores con o sin compañía</span>
             </button>
             <button className="type-card pet" onClick={() => { updateField('checkinType', 'pet'); setStep(2); }}>
-              <span className="type-icon">🐾</span>
+              <span className="type-icon"><CheckinTypeIcon type="pet" size="lg" /></span>
               <span className="type-label">Mascota</span>
               <span className="type-desc">Declaración jurada SAG para ingreso con mascotas</span>
             </button>
             <button className="type-card general" onClick={() => { updateField('checkinType', 'general'); setStep(2); }}>
-              <span className="type-icon">📋</span>
+              <span className="type-icon"><CheckinTypeIcon type="general" size="lg" /></span>
               <span className="type-label">Trámite General</span>
               <span className="type-desc">Otros trámites aduaneros o consultas generales</span>
             </button>
@@ -170,21 +163,22 @@ function TravelerCheckIn() {
         </div>
       )}
 
-      {/* Step 2: Form */}
       {step === 2 && (
         <div className="card checkin-form">
           <button className="btn-back" onClick={() => setStep(1)}>← Volver</button>
-          <h2>
-            {form.checkinType === 'vehicle' ? '🚗 Check-In Vehículo' :
-             form.checkinType === 'minor' ? '👶 Check-In Menor de Edad' :
-             form.checkinType === 'pet' ? '🐾 Check-In Mascota' :
-             '📋 Trámite General'}
+          <h2 className="page-title-with-icon">
+            <CheckinTypeIcon type={form.checkinType} size="md" />
+            {checkinTypeTitle(form.checkinType).replace('Trámite ', 'Check-In ')}
           </h2>
           <p className="card-subtitle">Completa los datos para tu check-in anticipado. Si pierdes la conexión, tus datos se guardarán localmente.</p>
 
           <form onSubmit={handleSubmit}>
             {error && <div className="alert alert-error">{error}</div>}
-            {!online && <div className="alert alert-warning">📴 Sin conexión — los datos se guardarán localmente y se sincronizarán después</div>}
+            {!online && (
+              <div className="alert alert-warning">
+                Sin conexión — los datos se guardarán localmente y se sincronizarán después
+              </div>
+            )}
 
             <div className="form-section">
               <h3>Datos del Viajero</h3>
@@ -205,7 +199,7 @@ function TravelerCheckIn() {
                 </div>
               </div>
               <div className="form-group">
-                <label>🏁 Paso Fronterizo</label>
+                <label>Paso Fronterizo</label>
                 <select value={form.borderCrossing} onChange={e => updateField('borderCrossing', e.target.value)} required>
                   <option value="">— Selecciona un paso fronterizo —</option>
                   {BORDER_CROSSINGS.map(bc => (
@@ -225,7 +219,6 @@ function TravelerCheckIn() {
               </div>
             </div>
 
-            {/* Vehicle fields */}
             {form.checkinType === 'vehicle' && (
               <div className="form-section">
                 <h3>Datos del Vehículo</h3>
@@ -257,12 +250,11 @@ function TravelerCheckIn() {
                   </div>
                 </div>
                 <div className="info-box">
-                  <strong>📌 Acuerdo Chileno-Argentino:</strong> Vehículos particulares: hasta 180 días. Diplomáticos (placa C.D., CC): hasta 90 días.
+                  <strong>Nota:</strong> Vehículos particulares: hasta 180 días. Diplomáticos (placa C.D., CC): hasta 90 días.
                 </div>
               </div>
             )}
 
-            {/* Minor fields */}
             {form.checkinType === 'minor' && (
               <div className="form-section">
                 <h3>Datos del Menor</h3>
@@ -293,12 +285,11 @@ function TravelerCheckIn() {
                   </div>
                 </div>
                 <div className="info-box">
-                  <strong>📌 Requisitos:</strong> Los menores de 18 años requieren cédula/pasaporte vigente y autorización notarial. Sin compañía: autorización sin legalización consular.
+                  <strong>Nota:</strong> Los menores de 18 años requieren cédula/pasaporte vigente y autorización notarial. Sin compañía: autorización sin legalización consular.
                 </div>
               </div>
             )}
 
-            {/* Pet fields */}
             {form.checkinType === 'pet' && (
               <div className="form-section">
                 <h3>Datos de la Mascota</h3>
@@ -333,12 +324,11 @@ function TravelerCheckIn() {
                   </div>
                 </div>
                 <div className="info-box">
-                  <strong>📌 Declaración SAG:</strong> Debes completar una declaración jurada ante SAG y Aduanas. Solo mayores de 18 años pueden declarar.
+                  <strong>Nota:</strong> Debes completar una declaración jurada ante SAG y Aduanas. Solo mayores de 18 años pueden declarar.
                 </div>
               </div>
             )}
 
-            {/* General */}
             {form.checkinType === 'general' && (
               <div className="form-section">
                 <h3>Trámite General</h3>
@@ -359,17 +349,18 @@ function TravelerCheckIn() {
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={() => setStep(1)}>Cancelar</button>
               <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Guardando...' : '✅ Realizar Check-In Anticipado'}
+                {submitting ? 'Guardando...' : 'Realizar Check-In Anticipado'}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Step 3: Confirmation */}
       {step === 3 && confirmation && (
         <div className="card confirmation-card">
-          <div className="confirmation-icon">✅</div>
+          <div className="confirmation-icon-wrap">
+            <Icon name="check" size="xl" />
+          </div>
           <h2>¡Check-In Registrado Exitosamente!</h2>
           <p className="card-subtitle">Tu trámite ha sido registrado. Preséntate en aduana con tu código de confirmación.</p>
 
@@ -380,7 +371,7 @@ function TravelerCheckIn() {
             </div>
             <div className="detail-row">
               <span>Tipo:</span>
-              <span>{confirmation.checkinType === 'vehicle' ? '🚗 Vehículo' : confirmation.checkinType === 'minor' ? '👶 Menor' : confirmation.checkinType === 'pet' ? '🐾 Mascota' : '📋 General'}</span>
+              <span>{checkinTypeLabel(confirmation.checkinType)}</span>
             </div>
             <div className="detail-row">
               <span>Paso Fronterizo:</span>
@@ -388,7 +379,7 @@ function TravelerCheckIn() {
             </div>
             <div className="detail-row">
               <span>Estado:</span>
-              <span className="status-badge badge-pending">⏳ Pendiente</span>
+              <StatusBadge status="pending" />
             </div>
             <div className="detail-row">
               <span>Fecha:</span>
@@ -396,7 +387,7 @@ function TravelerCheckIn() {
             </div>
             <div className="detail-row">
               <span>Sincronización:</span>
-              <span>{confirmation.synced ? '✅ Enviado al servidor' : '📴 Pendiente de sincronización'}</span>
+              <span>{confirmation.synced ? 'Enviado al servidor' : 'Pendiente de sincronización'}</span>
             </div>
           </div>
 

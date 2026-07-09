@@ -15,18 +15,49 @@ function getLabelText(value) {
   return DOCUMENT_LABELS.find((l) => l.value === value)?.label || value || 'Documento';
 }
 
-function getFileIcon(mimeType) {
-  if (mimeType === 'application/pdf') return '📄';
-  if (mimeType?.startsWith('image/')) return '🖼️';
-  return '📎';
-}
-
 function isImage(mimeType) {
   return mimeType?.startsWith('image/');
 }
 
 function isPdf(mimeType) {
   return mimeType === 'application/pdf';
+}
+
+function FileTypeIcon({ mimeType, className = 'file-type-icon' }) {
+  if (isPdf(mimeType)) {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="8" y1="13" x2="16" y2="13" />
+        <line x1="8" y1="17" x2="13" y2="17" />
+      </svg>
+    );
+  }
+  if (isImage(mimeType)) {
+    return (
+      <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+    );
+  }
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden="true">
+      <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+      <polyline points="13 2 13 9 20 9" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  );
 }
 
 function DocumentViewer({ doc, onClose }) {
@@ -50,7 +81,9 @@ function DocumentViewer({ doc, onClose }) {
       <div className="doc-viewer-panel" onClick={(e) => e.stopPropagation()}>
         <div className="doc-viewer-header">
           <div className="doc-viewer-title">
-            <span>{getFileIcon(doc.mimeType)}</span>
+            <span className="doc-viewer-icon-wrap">
+              <FileTypeIcon mimeType={doc.mimeType} className="file-type-icon file-type-icon-lg" />
+            </span>
             <div>
               <strong>{getLabelText(doc.label)}</strong>
               <span className="doc-viewer-filename">{doc.originalName}</span>
@@ -63,7 +96,7 @@ function DocumentViewer({ doc, onClose }) {
               </a>
             )}
             <button type="button" className="doc-viewer-close" onClick={onClose} aria-label="Cerrar">
-              ✕
+              <CloseIcon />
             </button>
           </div>
         </div>
@@ -144,14 +177,16 @@ function DocumentManager({ checkinId, canUpload = true, title = 'Documentos adju
   return (
     <>
       <div className="documents-section">
-        <h3>{title}</h3>
+        <h3 className="documents-title">{title}</h3>
         <p className="documents-hint">
           Adjunta cédula, autorizaciones, permisos u otros documentos requeridos (PDF, JPG o PNG, máx. 5 MB).
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
         {!online && (
-          <div className="alert alert-warning">📴 Sin conexión — los documentos solo se pueden subir con internet</div>
+          <div className="alert alert-warning">
+            Sin conexión — los documentos solo se pueden subir con internet activa.
+          </div>
         )}
 
         {canUpload && (
@@ -177,7 +212,7 @@ function DocumentManager({ checkinId, canUpload = true, title = 'Documentos adju
               </div>
             </div>
             <button type="submit" className="btn btn-primary btn-sm" disabled={uploading || !online || !file}>
-              {uploading ? 'Subiendo...' : '📤 Subir documento'}
+              {uploading ? 'Subiendo...' : 'Subir documento'}
             </button>
           </form>
         )}
@@ -191,7 +226,9 @@ function DocumentManager({ checkinId, canUpload = true, title = 'Documentos adju
             {documents.map((doc) => (
               <li key={doc.id} className="document-item">
                 <div className="document-info">
-                  <span className="document-icon">{getFileIcon(doc.mimeType)}</span>
+                  <span className="document-icon">
+                    <FileTypeIcon mimeType={doc.mimeType} />
+                  </span>
                   <div>
                     <strong>{getLabelText(doc.label)}</strong>
                     <span className="document-meta">

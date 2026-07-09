@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { login as apiLogin } from '../services/api';
+import { Icon } from '../components/icons';
 
 function Login() {
   const { login, online } = useAuth();
@@ -60,7 +61,7 @@ function Login() {
     <div className="page-center">
       <div className="login-card">
         <div className="login-header">
-          <span className="login-icon">👤</span>
+          <Icon name="user" size="xl" className="login-icon-svg" />
           <h1>Acceso Funcionarios</h1>
           <p className="login-subtitle">Panel oficial y administración</p>
           <p className="login-caption">Solo personal de aduana y administradores</p>
@@ -68,7 +69,7 @@ function Login() {
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="alert alert-error">{error}</div>}
-          {!online && <div className="alert alert-warning">📴 Modo offline — credenciales de prueba disponibles</div>}
+          {!online && <div className="alert alert-warning">Modo offline — credenciales de prueba disponibles</div>}
 
           <div className="form-group">
             <label htmlFor="username">Usuario</label>
@@ -108,11 +109,11 @@ function Login() {
           </p>
           <div className="creds-grid">
             <div>
-              <p>👑 <strong>Administrador:</strong></p>
+              <p><strong>Administrador:</strong></p>
               <code>admin / admin123</code>
             </div>
             <div>
-              <p>👤 <strong>Funcionarios:</strong></p>
+              <p><strong>Funcionarios:</strong></p>
               <code>oficial1 / aduana2026</code>
             </div>
           </div>

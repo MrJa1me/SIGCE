@@ -13,7 +13,7 @@ export function onNetworkChange(callback) {
 // Full sync: push unsynced data and pull server updates
 export async function performSync() {
   if (!isOnline()) {
-    console.log('🔄 SIGCE: Offline, sync postergado');
+    console.log('[SIGCE] Offline, sync postergado');
     return { synced: false, reason: 'offline' };
   }
 
@@ -60,10 +60,10 @@ export async function performSync() {
       }
     }
 
-    console.log(`🔄 Sync completo: ${pushedCount} enviados, ${serverData.length} en servidor`);
+    console.log(`[SIGCE] Sync completo: ${pushedCount} enviados, ${serverData.length} en servidor`);
     return { synced: true, pushed: pushedCount, serverTotal: serverData.length };
   } catch (error) {
-    console.error('🔄 Error de sync:', error.message);
+    console.error('[SIGCE] Error de sync:', error.message);
     return { synced: false, reason: error.message };
   }
 }
@@ -73,7 +73,7 @@ let syncInterval = null;
 
 export function startPeriodicSync(intervalMs = 30000) {
   stopPeriodicSync();
-  console.log(`🔄 Sync automático cada ${intervalMs / 1000}s`);
+  console.log(`[SIGCE] Sync automático cada ${intervalMs / 1000}s`);
   syncInterval = setInterval(performSync, intervalMs);
   // Also sync on online event
   window.addEventListener('online', handleOnlineSync);
@@ -88,6 +88,6 @@ export function stopPeriodicSync() {
 }
 
 async function handleOnlineSync() {
-  console.log('🔄 ¡Conexión recuperada! Sincronizando...');
+  console.log('[SIGCE] Conexión recuperada, sincronizando...');
   await performSync();
 }

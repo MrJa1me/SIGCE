@@ -114,6 +114,80 @@ app.delete('/api/users/:id', (req, res) => {
   res.json({ success: true });
 });
 
+function computeAdminStats(data, days = 14) {
+  const countBy = (items, field) => items.reduce((acc, item) => {
+    const key = item[field] || 'sin-dato';
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {});
+
+  const dailyCount = (items, dateField) => {
+    const map = {};
+    const cutoff = new Date();
+    cutoff.setHours(0, 0, 0, 0);
+    cutoff.setDate(cutoff.getDate() - (days - 1));
+    for (const item of items) {
+      const raw = item[dateField] || item.createdAt || item.created_at;
+      if (!raw) continue;
+      const d = new Date(raw);
+      if (d < cutoff) continue;
+      const key = d.toISOString().slice(0, 10);
+      map[key] = (map[key] || 0) + 1;
+    }
+    return Object.entries(map).map(([date, count]) => ({ date, count })).sort((a, b) => a.date.localeCompare(b.date));
+  };
+
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 6);
+
+  const checkins = data.checkins || [];
+  const users = data.users || [];
+  const byStatus = countBy(checkins, 'status');
+
+  const resolved = (byStatus.accepted || 0) + (byStatus.rejected || 0);
+  const processed = checkins.filter((c) => c.processedAt || c.processed_at);
+  const avgHours = processed.length
+    ? processed.reduce((sum, c) => {
+      const start = new Date(c.createdAt || c.created_at);
+      const end = new Date(c.processedAt || c.processed_at);
+      return sum + (end - start) / 3600000;
+    }, 0) / processed.length
+    : 0;
+
+  return {
+    periodDays: days,
+    generatedAt: new Date().toISOString(),
+    users: {
+      total: users.length,
+      byRole: countBy(users, 'role'),
+      daily: dailyCount(users, 'createdAt'),
+    },
+    checkins: {
+      total: checkins.length,
+      today: checkins.filter((c) => (c.createdAt || c.created_at || '').slice(0, 10) === today).length,
+      thisWeek: checkins.filter((c) => new Date(c.createdAt || c.created_at) >= weekAgo).length,
+      byStatus,
+      byType: countBy(checkins, 'checkinType'),
+      byCrossing: countBy(checkins, 'borderCrossing'),
+      daily: dailyCount(checkins, 'createdAt'),
+      byNationality: countBy(checkins, 'nationality'),
+    },
+    documents: { total: 0 },
+    summary: {
+      acceptanceRate: resolved > 0 ? Math.round(((byStatus.accepted || 0) / resolved) * 100) : 0,
+      pendingCount: (byStatus.pending || 0) + (byStatus.in_review || 0),
+      avgProcessingHours: Math.round(avgHours * 10) / 10,
+    },
+  };
+}
+
+app.get('/api/admin/stats', (req, res) => {
+  const days = Math.min(Math.max(parseInt(req.query.days, 10) || 14, 7), 90);
+  const data = readData();
+  res.json(computeAdminStats(data, days));
+});
+
 // ---------- Check-Ins ----------
 app.get('/api/checkins', (req, res) => {
   const data = readData();

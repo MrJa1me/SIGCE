@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Icon } from '../components/icons';
 
 function RutEntry({ onRutEntered }) {
   const [rut, setRut] = useState('');
@@ -23,7 +24,7 @@ function RutEntry({ onRutEntered }) {
     <div className="page-container">
       <div className="card" style={{ maxWidth: 480, margin: '40px auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <span style={{ fontSize: 64 }}>🛂</span>
+          <Icon name="logo" size="xl" className="hero-icon-svg" />
           <h2>Bienvenido a SIGCE</h2>
           <p className="card-subtitle">
             Sistema de Información y Gestión de Control de Extranjería
@@ -59,12 +60,12 @@ function RutEntry({ onRutEntered }) {
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: 8 }}>
-            🔍 Ingresar
+            Ingresar
           </button>
         </form>
 
         <div style={{ marginTop: 20, padding: 12, background: '#f0f7ff', borderRadius: 8, fontSize: 13, textAlign: 'center' }}>
-          <strong>🚀 ¿Primera vez?</strong>
+          <strong>¿Primera vez?</strong>
           <p style={{ margin: '4px 0 0' }}>
             Ingresa tu RUT para comenzar. Todos tus trámites quedarán vinculados a él.
             Si ya has realizado trámites antes, aparecerán automáticamente.

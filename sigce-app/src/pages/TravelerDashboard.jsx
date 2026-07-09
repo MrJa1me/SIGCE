@@ -6,6 +6,7 @@ import { getTravelerCheckins } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import DocumentManager from '../components/DocumentManager';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
 
 function TravelerDashboard() {
   const { user, online } = useAuth();
@@ -76,22 +77,16 @@ function TravelerDashboard() {
     }
   };
 
-  const getTypeIcon = (type) => {
-    const icons = { vehicle: '🚗', minor: '👶', pet: '🐾', general: '📋' };
-    return icons[type] || '📋';
-  };
-
-  const getTypeLabel = (type) => {
-    const labels = { vehicle: 'Vehículo', minor: 'Menor de Edad', pet: 'Mascota', general: 'General' };
-    return labels[type] || type;
-  };
+  const getType = (checkin) => checkin.checkinType || checkin.checkin_type;
 
   return (
     <div className="page-container">
       <div className="page-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
-            <h2>📋 Mis Trámites</h2>
+            <h2 className="page-title-with-icon">
+              <Icon name="clipboard" size="md" /> Mis Trámites
+            </h2>
             <p>
               Hola, <strong>{user?.name}</strong>
               {rut && <> — RUT: <strong>{rut}</strong></>}
@@ -102,7 +97,7 @@ function TravelerDashboard() {
 
       {!rut && (
         <div className="alert alert-warning">
-          Agrega tu RUT en tu perfil contactando soporte, o al crear trámites se vincularán a tu cuenta.
+          Agrega tu RUT en tu perfil para vincular trámites anteriores.
         </div>
       )}
 
@@ -112,7 +107,7 @@ function TravelerDashboard() {
         <div className="loading">Cargando trámites...</div>
       ) : checkins.length === 0 ? (
         <div className="card empty-state">
-          <span className="empty-icon">📭</span>
+          <Icon name="inbox" size="xl" className="empty-icon-svg" />
           <h3>No tienes trámites registrados</h3>
           <p>Realiza un check-in anticipado para agilizar tu paso por la aduana.</p>
           <Link to="/pasos" className="btn btn-primary">Ir a pasos fronterizos</Link>
@@ -123,8 +118,8 @@ function TravelerDashboard() {
             <div key={checkin.localId || checkin.id} className="card checkin-card">
               <div className="checkin-card-header">
                 <div className="checkin-type-badge">
-                  <span>{getTypeIcon(checkin.checkinType || checkin.checkin_type)}</span>
-                  <span>{getTypeLabel(checkin.checkinType || checkin.checkin_type)}</span>
+                  <CheckinTypeIcon type={getType(checkin)} size="sm" />
+                  <span>{checkinTypeLabel(getType(checkin))}</span>
                 </div>
                 <StatusBadge status={checkin.status} />
               </div>
@@ -143,26 +138,26 @@ function TravelerDashboard() {
                   </span>
                 </div>
 
-                {checkin.checkinType === 'vehicle' && checkin.details?.patent && (
+                {getType(checkin) === 'vehicle' && checkin.details?.patent && (
                   <div className="checkin-detail">
-                    🚗 {checkin.details.brand} {checkin.details.model} — Patente: <strong>{checkin.details.patent}</strong>
+                    {checkin.details.brand} {checkin.details.model} — Patente: <strong>{checkin.details.patent}</strong>
                   </div>
                 )}
                 {checkin.comments && (
-                  <div className="checkin-detail comment">💬 {checkin.comments}</div>
+                  <div className="checkin-detail comment">{checkin.comments}</div>
                 )}
 
                 {online && (
                   <DocumentManager
                     checkinId={checkin.localId || checkin.id}
-                    title="📎 Documentos"
+                    title="Documentos"
                   />
                 )}
               </div>
 
               <div className="checkin-card-footer">
                 <span className={`sync-badge ${checkin.synced ? 'synced' : 'pending'}`}>
-                  {checkin.synced ? '✅ Sincronizado' : '📴 Pendiente de sincronización'}
+                  {checkin.synced ? 'Sincronizado' : 'Pendiente de sincronización'}
                 </span>
               </div>
             </div>
@@ -170,7 +165,7 @@ function TravelerDashboard() {
         </div>
       )}
       <div style={{ textAlign: 'center', marginTop: 20 }}>
-        <Link to="/pasos" className="btn btn-primary">📝 Nuevo Check-In</Link>
+        <Link to="/pasos" className="btn btn-primary">Nuevo Check-In</Link>
       </div>
     </div>
   );

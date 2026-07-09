@@ -1,10 +1,11 @@
 import React from 'react';
+import { STATUS_LABELS } from './icons';
 
 const statusConfig = {
-  pending: { label: 'Pendiente', className: 'badge-pending' },
-  accepted: { label: '✅ Aprobado', className: 'badge-accepted' },
-  rejected: { label: '❌ Rechazado', className: 'badge-rejected' },
-  in_review: { label: '🔍 En Revisión', className: 'badge-review' },
+  pending: { label: STATUS_LABELS.pending, className: 'badge-pending' },
+  accepted: { label: STATUS_LABELS.accepted, className: 'badge-accepted' },
+  rejected: { label: STATUS_LABELS.rejected, className: 'badge-rejected' },
+  in_review: { label: STATUS_LABELS.in_review, className: 'badge-review' },
 };
 
 function StatusBadge({ status }) {

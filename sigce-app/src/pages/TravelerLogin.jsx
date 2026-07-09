@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { login as apiLogin } from '../services/api';
+import { Icon } from '../components/icons';
 
 function TravelerLogin() {
   const { login, online } = useAuth();
@@ -41,14 +42,14 @@ function TravelerLogin() {
     <div className="page-center">
       <div className="login-card">
         <div className="login-header">
-          <span className="login-icon">🧳</span>
+          <Icon name="traveler" size="xl" className="login-icon-svg" />
           <h1>Ingreso Viajero</h1>
           <p className="login-subtitle">Accede a tu cuenta para gestionar trámites</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="alert alert-error">{error}</div>}
-          {!online && <div className="alert alert-warning">📴 Sin conexión — conéctate para iniciar sesión</div>}
+          {!online && <div className="alert alert-warning">Sin conexión — conéctate para iniciar sesión</div>}
 
           <div className="form-group">
             <label htmlFor="username">Usuario</label>

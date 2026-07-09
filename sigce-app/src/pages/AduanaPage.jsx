@@ -5,6 +5,8 @@ import { BORDER_CROSSINGS, getBorderCrossing } from '../services/borderCrossings
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
 import DocumentManager from '../components/DocumentManager';
+import StatusBadge from '../components/StatusBadge';
+import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
 
 const buildInitialForm = (user) => ({
   fullName: user?.name || '',
@@ -13,25 +15,20 @@ const buildInitialForm = (user) => ({
   email: user?.email || '',
   phone: '',
   checkinType: '',
-  // Vehicle fields
   patent: '',
   brand: '',
   model: '',
   vehicleYear: '',
   vehicleType: 'particular',
-  // Minor fields
   minorName: '',
   minorRut: '',
   minorAccompaniedBy: 'both',
   hasMinorAuthorization: false,
-  // Pet fields
   petType: 'dog',
   petName: '',
   petBreed: '',
   petHasVaccines: false,
   petHasMicrochip: false,
-  // General
-  // PDI / Migraciones
   passportNumber: '',
   documentType: 'ci',
   nationalityCountry: 'Chile',
@@ -55,7 +52,7 @@ function AduanaPage() {
     return (
       <div className="page-container">
         <div className="card empty-state">
-          <span className="empty-icon">❌</span>
+          <Icon name="x" size="xl" className="empty-icon-svg" />
           <h3>Aduana no encontrada</h3>
           <p>El paso fronterizo que buscas no existe.</p>
           <Link to="/" className="btn btn-primary">Volver al inicio</Link>
@@ -99,8 +96,6 @@ function AduanaPage() {
       details.petHasVaccines = form.petHasVaccines;
       details.petHasMicrochip = form.petHasMicrochip;
     }
-
-
 
     const checkinData = {
       localId: crypto.randomUUID(),
@@ -154,31 +149,33 @@ function AduanaPage() {
 
   return (
     <div className="aduana-page" style={{ '--aduana-color': aduana.color, '--aduana-light': aduana.colorLight, '--aduana-bg': aduana.colorBg }}>
-      {/* Aduana Header */}
       <div className="aduana-header" style={{ background: aduana.gradient }}>
         <button className="aduana-back" onClick={() => navigate('/pasos')}>← Volver a pasos fronterizos</button>
         <div className="aduana-header-info">
-          <span className="aduana-big-icon">{aduana.icon}</span>
+          <span className="aduana-big-code">{aduana.code}</span>
           <div>
             <h1>{aduana.name}</h1>
             <p className="aduana-header-region">{aduana.region} — Frontera Chile-{aduana.country}</p>
             <div className="aduana-header-stats">
-              <span>📊 Flujo: {aduana.stats.dailyFlow} personas/día</span>
-              <span>⏱ Espera: {aduana.stats.avgWait}</span>
-              <span>🏔️ Altitud: {aduana.stats.altitude}</span>
+              <span>Flujo: {aduana.stats.dailyFlow} personas/día</span>
+              <span>Espera: {aduana.stats.avgWait}</span>
+              <span>Altitud: {aduana.stats.altitude}</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Step: Select type */}
       {step === 'select' && (
         <div className="aduana-content">
-          {!online && <div className="alert alert-warning">📴 Sin conexión — los datos se guardarán localmente y se sincronizarán después</div>}
+          {!online && (
+            <div className="alert alert-warning">
+              Sin conexión — los datos se guardarán localmente y se sincronizarán después
+            </div>
+          )}
 
           {user?.role !== 'traveler' ? (
             <div className="card" style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center' }}>
-              <span style={{ fontSize: 48 }}>🔐</span>
+              <Icon name="lock" size="xl" />
               <h2>Inicia sesión para continuar</h2>
               <p className="card-subtitle">Necesitas una cuenta de viajero para realizar el check-in anticipado</p>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginTop: 20 }}>
@@ -188,59 +185,59 @@ function AduanaPage() {
             </div>
           ) : (
             <>
-          <h2 className="aduana-section-title">Check-In Anticipado — {aduana.shortName}</h2>
-          <p className="aduana-section-subtitle">
-            Selecciona el tipo de trámite que deseas realizar. Al llegar a la aduana, preséntate con tu código de confirmación.
-          </p>
+              <h2 className="aduana-section-title">Check-In Anticipado — {aduana.shortName}</h2>
+              <p className="aduana-section-subtitle">
+                Selecciona el tipo de trámite que deseas realizar. Al llegar a la aduana, preséntate con tu código de confirmación.
+              </p>
 
-          <div className="type-grid aduana-type-grid">
-            <button className="type-card vehicle" onClick={() => selectType('vehicle')} style={{ borderColor: aduana.color }}>
-              <span className="type-icon">🚗</span>
-              <span className="type-label">Vehículo</span>
-              <span className="type-desc">Salida/entrada temporal de vehículo particular o diplomático</span>
-              <span className="type-info">📄 Acuerdo Chileno-Argentino</span>
-            </button>
-            <button className="type-card minor" onClick={() => selectType('minor')} style={{ borderColor: aduana.color }}>
-              <span className="type-icon">👶</span>
-              <span className="type-label">Menor de Edad</span>
-              <span className="type-desc">Autorización para viaje de menores con o sin compañía</span>
-              <span className="type-info">📄 Cédula + Autorización notarial</span>
-            </button>
-            <button className="type-card pet" onClick={() => selectType('pet')} style={{ borderColor: aduana.color }}>
-              <span className="type-icon">🐾</span>
-              <span className="type-label">Mascota</span>
-              <span className="type-desc">Declaración jurada SAG para ingreso con mascotas</span>
-              <span className="type-info">📄 Vacunas al día + Microchip</span>
-            </button>
-            <button className="type-card general" onClick={() => selectType('general')} style={{ borderColor: aduana.color }}>
-              <span className="type-icon">📋</span>
-              <span className="type-label">Trámite General</span>
-              <span className="type-desc">Otros trámites aduaneros o consultas</span>
-              <span className="type-info">📄 Consulta general</span>
-            </button>
-          </div>
+              <div className="type-grid aduana-type-grid">
+                <button className="type-card vehicle" onClick={() => selectType('vehicle')} style={{ borderColor: aduana.color }}>
+                  <span className="type-icon"><CheckinTypeIcon type="vehicle" size="lg" /></span>
+                  <span className="type-label">Vehículo</span>
+                  <span className="type-desc">Salida/entrada temporal de vehículo particular o diplomático</span>
+                  <span className="type-info">Acuerdo Chileno-Argentino</span>
+                </button>
+                <button className="type-card minor" onClick={() => selectType('minor')} style={{ borderColor: aduana.color }}>
+                  <span className="type-icon"><CheckinTypeIcon type="minor" size="lg" /></span>
+                  <span className="type-label">Menor de Edad</span>
+                  <span className="type-desc">Autorización para viaje de menores con o sin compañía</span>
+                  <span className="type-info">Cédula + Autorización notarial</span>
+                </button>
+                <button className="type-card pet" onClick={() => selectType('pet')} style={{ borderColor: aduana.color }}>
+                  <span className="type-icon"><CheckinTypeIcon type="pet" size="lg" /></span>
+                  <span className="type-label">Mascota</span>
+                  <span className="type-desc">Declaración jurada SAG para ingreso con mascotas</span>
+                  <span className="type-info">Vacunas al día + Microchip</span>
+                </button>
+                <button className="type-card general" onClick={() => selectType('general')} style={{ borderColor: aduana.color }}>
+                  <span className="type-icon"><CheckinTypeIcon type="general" size="lg" /></span>
+                  <span className="type-label">Trámite General</span>
+                  <span className="type-desc">Otros trámites aduaneros o consultas</span>
+                  <span className="type-info">Consulta general</span>
+                </button>
+              </div>
             </>
           )}
         </div>
       )}
 
-      {/* Step: Form */}
       {step === 'form' && (
         <div className="aduana-content">
           <div className="card checkin-form aduana-form-card" style={{ borderTop: `4px solid ${aduana.color}` }}>
             <button className="btn-back" onClick={() => setStep('select')}>← Elegir otro trámite</button>
             <div className="form-badge" style={{ background: aduana.gradient }}>
-              {aduana.icon} {aduana.shortName} —{' '}
-              {checkinType === 'vehicle' ? '🚗 Vehículo' : checkinType === 'minor' ? '👶 Menor de Edad' : checkinType === 'pet' ? '🐾 Mascota' : '📋 General'}
+              <span className="aduana-card-code">{aduana.code}</span> {aduana.shortName} — {checkinTypeLabel(checkinType)}
             </div>
             <p className="card-subtitle">Completa tus datos. Si pierdes conexión, se guardarán localmente.</p>
 
             <form onSubmit={handleSubmit}>
               {error && <div className="alert alert-error">{error}</div>}
-              {!online && <div className="alert alert-warning">📴 Sin conexión — datos guardados localmente</div>}
+              {!online && (
+                <div className="alert alert-warning">Sin conexión — datos guardados localmente</div>
+              )}
 
               <div className="form-section">
-                <h3>👤 Tus Datos</h3>
+                <h3 className="page-title-with-icon"><Icon name="user" size="sm" /> Tus Datos</h3>
                 <div className="form-row">
                   <div className="form-group">
                     <label>Nombre Completo</label>
@@ -271,10 +268,9 @@ function AduanaPage() {
                 </div>
               </div>
 
-              {/* Vehicle fields */}
               {checkinType === 'vehicle' && (
                 <div className="form-section">
-                  <h3>🚗 Datos del Vehículo</h3>
+                  <h3 className="page-title-with-icon"><Icon name="vehicle" size="sm" /> Datos del Vehículo</h3>
                   <div className="form-row">
                     <div className="form-group">
                       <label>Patente</label>
@@ -303,15 +299,14 @@ function AduanaPage() {
                     </div>
                   </div>
                   <div className="info-box" style={{ background: aduana.colorBg, borderColor: aduana.color }}>
-                    <strong>📌 Acuerdo Chileno-Argentino:</strong> Particulares hasta 180 días. Diplomáticos (C.D., CC) hasta 90 días.
+                    <strong>Nota:</strong> Particulares hasta 180 días. Diplomáticos (C.D., CC) hasta 90 días.
                   </div>
                 </div>
               )}
 
-              {/* Minor fields */}
               {checkinType === 'minor' && (
                 <div className="form-section">
-                  <h3>👶 Datos del Menor</h3>
+                  <h3 className="page-title-with-icon"><Icon name="minor" size="sm" /> Datos del Menor</h3>
                   <div className="form-row">
                     <div className="form-group">
                       <label>Nombre del Menor</label>
@@ -339,15 +334,14 @@ function AduanaPage() {
                     </div>
                   </div>
                   <div className="info-box" style={{ background: aduana.colorBg, borderColor: aduana.color }}>
-                    <strong>📌 Requisitos:</strong> Menores de 18 años requieren cédula/pasaporte vigente. Sin compañía de padres: autorización notarial sin legalización consular.
+                    <strong>Nota:</strong> Menores de 18 años requieren cédula/pasaporte vigente. Sin compañía de padres: autorización notarial sin legalización consular.
                   </div>
                 </div>
               )}
 
-              {/* Pet fields */}
               {checkinType === 'pet' && (
                 <div className="form-section">
-                  <h3>🐾 Datos de la Mascota</h3>
+                  <h3 className="page-title-with-icon"><Icon name="pet" size="sm" /> Datos de la Mascota</h3>
                   <div className="form-row">
                     <div className="form-group">
                       <label>Tipo</label>
@@ -379,15 +373,14 @@ function AduanaPage() {
                     </div>
                   </div>
                   <div className="info-box" style={{ background: aduana.colorBg, borderColor: aduana.color }}>
-                    <strong>📌 Declaración SAG:</strong> Debes completar una declaración jurada ante SAG. Solo mayores de 18 años.
+                    <strong>Nota:</strong> Debes completar una declaración jurada ante SAG. Solo mayores de 18 años.
                   </div>
                 </div>
               )}
 
-              {/* General */}
               {checkinType === 'general' && (
                 <div className="form-section">
-                  <h3>📋 Describe tu trámite</h3>
+                  <h3 className="page-title-with-icon"><Icon name="general" size="sm" /> Describe tu trámite</h3>
                   <div className="form-group">
                     <textarea value={form.comments} onChange={e => updateField('comments', e.target.value)} rows="4" placeholder="Detalla el motivo de tu check-in..." required />
                   </div>
@@ -395,7 +388,7 @@ function AduanaPage() {
               )}
 
               <div className="form-section">
-                <h3>💬 Comentarios (opcional)</h3>
+                <h3 className="page-title-with-icon"><Icon name="comment" size="sm" /> Comentarios (opcional)</h3>
                 <div className="form-group">
                   <textarea value={form.comments} onChange={e => updateField('comments', e.target.value)} rows="2" placeholder="Información adicional para el funcionario..." />
                 </div>
@@ -404,7 +397,7 @@ function AduanaPage() {
               <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setStep('select')}>Cancelar</button>
                 <button type="submit" className="btn btn-primary" disabled={submitting} style={{ background: aduana.color }}>
-                  {submitting ? 'Guardando...' : `✅ Check-In en ${aduana.shortName}`}
+                  {submitting ? 'Guardando...' : `Check-In en ${aduana.shortName}`}
                 </button>
               </div>
             </form>
@@ -412,11 +405,12 @@ function AduanaPage() {
         </div>
       )}
 
-      {/* Step: Confirmation */}
       {step === 'confirmation' && confirmation && (
         <div className="aduana-content">
           <div className="card confirmation-card" style={{ borderTop: `4px solid ${aduana.color}` }}>
-            <div className="confirmation-icon">✅</div>
+            <div className="confirmation-icon-wrap">
+              <Icon name="check" size="xl" />
+            </div>
             <h2>¡Check-In Registrado!</h2>
             <p className="card-subtitle">Preséntate en <strong>{aduana.name}</strong> con tu código de confirmación.</p>
 
@@ -427,11 +421,13 @@ function AduanaPage() {
               </div>
               <div className="detail-row">
                 <span>Paso Fronterizo:</span>
-                <span style={{ color: aduana.color, fontWeight: 600 }}>{aduana.icon} {aduana.name}</span>
+                <span style={{ color: aduana.color, fontWeight: 600 }}>
+                  <span className="aduana-card-code">{aduana.code}</span> {aduana.name}
+                </span>
               </div>
               <div className="detail-row">
                 <span>Trámite:</span>
-                <span>{checkinType === 'vehicle' ? '🚗 Vehículo' : checkinType === 'minor' ? '👶 Menor' : checkinType === 'pet' ? '🐾 Mascota' : '📋 General'}</span>
+                <span>{checkinTypeLabel(checkinType)}</span>
               </div>
               <div className="detail-row">
                 <span>Viajero:</span>
@@ -439,18 +435,18 @@ function AduanaPage() {
               </div>
               <div className="detail-row">
                 <span>Estado:</span>
-                <span className="status-badge badge-pending">⏳ Pendiente</span>
+                <StatusBadge status="pending" />
               </div>
               <div className="detail-row">
                 <span>Sincronización:</span>
-                <span>{confirmation.synced ? '✅ Enviado' : '📴 Pendiente'}</span>
+                <span>{confirmation.synced ? 'Enviado' : 'Pendiente'}</span>
               </div>
             </div>
 
             <DocumentManager
               checkinId={confirmation.localId || confirmation.id}
               canUpload={online}
-              title="📎 Adjuntar documentos"
+              title="Adjuntar documentos"
             />
 
             <div className="form-actions" style={{ justifyContent: 'center' }}>

@@ -46,8 +46,8 @@ function App() {
     startPeriodicSync(15000);
     onNetworkChange((status) => {
       setOnline(status);
-      if (status) setSyncStatus('📡 Conectado — sincronizando...');
-      else setSyncStatus('📴 Sin conexión — modo offline');
+      if (status) setSyncStatus('Conectado — sincronizando...');
+      else setSyncStatus('Sin conexión — modo offline');
       setTimeout(() => setSyncStatus(''), 4000);
     });
     return () => stopPeriodicSync();

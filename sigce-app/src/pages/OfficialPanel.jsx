@@ -5,6 +5,7 @@ import { getLocalCheckins, updateLocalCheckinStatus, queueStatusChange } from '.
 import { getPendingCheckins, getCheckins, updateCheckinStatus } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
+import { Icon, CheckinTypeIcon, checkinTypeLabel, yesNo, PDI_STATUS_LABELS } from '../components/icons';
 
 function OfficialPanel() {
   const { user, online } = useAuth();
@@ -66,9 +67,9 @@ function OfficialPanel() {
     setActionLoading(checkin.localId || checkin.id);
     try {
       const comment = prompt(
-        newStatus === 'accepted' ? '✅ Agregar comentario (opcional):' :
-        newStatus === 'rejected' ? '❌ Motivo del rechazo:' :
-        '🔍 Motivo de la revisión:',
+        newStatus === 'accepted' ? 'Agregar comentario (opcional):' :
+        newStatus === 'rejected' ? 'Motivo del rechazo:' :
+        'Motivo de la revisión:',
         ''
       );
       if (newStatus === 'rejected' && !comment) { alert('Debes ingresar un motivo.'); setActionLoading(null); return; }
@@ -84,14 +85,12 @@ function OfficialPanel() {
     setActionLoading(null);
   };
 
-  // Separate by source
   const onlineCheckins = checkins.filter(c => c.source !== 'inperson');
   const inpersonCheckins = checkins.filter(c => c.source === 'inperson');
 
   const filteredList = (activeTab === 'online' ? onlineCheckins : activeTab === 'inperson' ? inpersonCheckins : checkins)
     .filter(c => filter === 'all' || c.status === filter);
 
-  // Export to CSV
   const exportCSV = (list) => {
     const headers = ['Código', 'Viajero', 'RUT', 'Nacionalidad', 'Tipo', 'Paso Fronterizo', 'Aduana', 'Origen', 'Estado', 'Fecha Ingreso', 'Procesado Por', 'Funcionario RUT', 'Paso Asignado', 'Comentario', 'PDI Estado'];
     const rows = list.map(c => [
@@ -99,7 +98,7 @@ function OfficialPanel() {
       c.userName || '',
       c.rut || '',
       c.nationality || '',
-      { vehicle: 'Vehículo', minor: 'Menor', pet: 'Mascota', general: 'General' }[c.checkinType] || c.checkinType,
+      checkinTypeLabel(c.checkinType),
       BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.name || c.borderCrossing || '',
       BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.region || '',
       c.source === 'inperson' ? 'Presencial' : 'Online',
@@ -119,7 +118,6 @@ function OfficialPanel() {
     a.click(); URL.revokeObjectURL(url);
   };
 
-  // Print / PDF
   const printReport = (list, title) => {
     const w = window.open('', '_blank');
     const rows = list.map(c => `<tr>
@@ -127,7 +125,7 @@ function OfficialPanel() {
       <td>${c.userName || ''}</td>
       <td>${c.rut || ''}</td>
       <td>${c.nationality || ''}</td>
-      <td>${{ vehicle: 'Vehículo', minor: 'Menor', pet: 'Mascota', general: 'General' }[c.checkinType] || c.checkinType}</td>
+      <td>${checkinTypeLabel(c.checkinType)}</td>
       <td>${BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.name || c.borderCrossing || ''}</td>
       <td>${BORDER_CROSSINGS.find(bc => bc.id === c.borderCrossing)?.region || ''}</td>
       <td>${c.source === 'inperson' ? 'Presencial' : 'Online'}</td>
@@ -149,7 +147,7 @@ function OfficialPanel() {
         .footer { margin-top: 20px; font-size: 0.8em; color: #999; text-align: center; }
         @media print { @page { size: landscape; } }
       </style></head><body>
-      <h1>🛂 Reporte SIGCE — ${title}</h1>
+      <h1>Reporte SIGCE — ${title}</h1>
       <div class="meta">Generado: ${new Date().toLocaleString('es-CL')} | Total: ${list.length} trámites</div>
       <table>
         <tr><th>Código</th><th>Viajero</th><th>RUT</th><th>Nacionalidad</th><th>Tipo</th><th>Paso Fronterizo</th><th>Región</th><th>Origen</th><th>Estado</th><th>Fecha</th><th>Funcionario</th></tr>
@@ -161,87 +159,116 @@ function OfficialPanel() {
     setTimeout(() => { w.focus(); w.print(); }, 500);
   };
 
-  const getTypeIcon = (type) => ({ vehicle: '🚗', minor: '👶', pet: '🐾', general: '📋' }[type] || '📋');
-  const getTypeLabel = (type) => ({ vehicle: 'Vehículo', minor: 'Menor de Edad', pet: 'Mascota', general: 'General' }[type] || type);
   const formatDate = (dateStr) => { try { return new Date(dateStr).toLocaleString('es-CL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return dateStr; } };
+
+  const filterLabels = {
+    pending: 'Pendientes',
+    in_review: 'En Revisión',
+    accepted: 'Aprobados',
+    rejected: 'Rechazados',
+    all: 'Todos',
+  };
+
+  const pdiBadgeLabel = (status) => {
+    if (status === 'cleared') return `PDI: ${PDI_STATUS_LABELS.cleared}`;
+    if (status === 'denied') return `PDI: ${PDI_STATUS_LABELS.denied}`;
+    return `PDI: ${PDI_STATUS_LABELS.flagged}`;
+  };
 
   return (
     <div className="page-container">
       <div className="page-header">
-        <h2>👤 Panel de Funcionarios — Aduanas Chile</h2>
+        <h2 className="page-title-with-icon">
+          <Icon name="user" size="md" /> Panel de Funcionarios — Aduanas Chile
+        </h2>
         <p>Gestión de check-ins anticipados y trámites presenciales</p>
-        {!online && <div className="alert alert-warning">📴 Sin conexión al servidor — modo local</div>}
+        {!online && (
+          <div className="alert alert-warning">
+            Sin conexión al servidor — modo local
+          </div>
+        )}
         <div className="official-actions-bar">
-          <button className="btn btn-primary" onClick={() => navigate('/oficial/nuevo')}>📝 Nuevo Trámite Presencial</button>
+          <button className="btn btn-primary" onClick={() => navigate('/oficial/nuevo')}>
+            Nuevo Trámite Presencial
+          </button>
           <span className="bar-hint">Para viajeros que llegaron sin check-in</span>
           <div className="export-actions">
-            <button className="btn btn-secondary btn-sm" onClick={() => exportCSV(filteredList)}>📄 Exportar CSV</button>
-            <button className="btn btn-secondary btn-sm" onClick={() => printReport(filteredList, activeTab === 'inperson' ? 'Trámites Presenciales' : activeTab === 'online' ? 'Check-In Online' : 'Todos los Trámites')}>🖨️ Imprimir / PDF</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => exportCSV(filteredList)}>
+              Exportar CSV
+            </button>
+            <button className="btn btn-secondary btn-sm" onClick={() => printReport(filteredList, activeTab === 'inperson' ? 'Trámites Presenciales' : activeTab === 'online' ? 'Check-In Online' : 'Todos los Trámites')}>
+              Imprimir / PDF
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Stats cards */}
       <div className="stats-grid">
         <div className="stat-card pending-stat" onClick={() => setFilter('pending')}>
-          <span className="stat-number">{stats.pending}</span><span className="stat-label">Pendientes</span><span className="stat-icon">⏳</span>
+          <span className="stat-number">{stats.pending}</span>
+          <span className="stat-label">Pendientes</span>
+          <span className="stat-icon"><Icon name="clock" size="md" /></span>
         </div>
         <div className="stat-card review-stat" onClick={() => setFilter('in_review')}>
-          <span className="stat-number">{stats.review}</span><span className="stat-label">En Revisión</span><span className="stat-icon">🔍</span>
+          <span className="stat-number">{stats.review}</span>
+          <span className="stat-label">En Revisión</span>
+          <span className="stat-icon"><Icon name="search" size="md" /></span>
         </div>
         <div className="stat-card accepted-stat" onClick={() => setFilter('accepted')}>
-          <span className="stat-number">{stats.accepted}</span><span className="stat-label">Aprobados</span><span className="stat-icon">✅</span>
+          <span className="stat-number">{stats.accepted}</span>
+          <span className="stat-label">Aprobados</span>
+          <span className="stat-icon"><Icon name="check" size="md" /></span>
         </div>
         <div className="stat-card rejected-stat" onClick={() => setFilter('rejected')}>
-          <span className="stat-number">{stats.rejected}</span><span className="stat-label">Rechazados</span><span className="stat-icon">❌</span>
+          <span className="stat-number">{stats.rejected}</span>
+          <span className="stat-label">Rechazados</span>
+          <span className="stat-icon"><Icon name="x" size="md" /></span>
         </div>
         <div className="stat-card total-stat" onClick={() => setFilter('all')}>
-          <span className="stat-number">{checkins.length}</span><span className="stat-label">Total</span><span className="stat-icon">📊</span>
+          <span className="stat-number">{checkins.length}</span>
+          <span className="stat-label">Total</span>
+          <span className="stat-icon"><Icon name="clipboard" size="md" /></span>
         </div>
       </div>
 
-      {/* Zones / Tabs */}
       <div className="zone-tabs">
         <button className={`zone-tab ${activeTab === 'all' ? 'active' : ''}`} onClick={() => setActiveTab('all')}>
-          📋 Todos ({checkins.length})
+          Todos ({checkins.length})
         </button>
         <button className={`zone-tab ${activeTab === 'online' ? 'active' : ''}`} onClick={() => setActiveTab('online')}>
-          🌐 Check-In Online ({onlineCheckins.length})
+          Check-In Online ({onlineCheckins.length})
         </button>
         <button className={`zone-tab ${activeTab === 'inperson' ? 'active' : ''}`} onClick={() => setActiveTab('inperson')}>
-          📝 Presencial ({inpersonCheckins.length})
+          Presencial ({inpersonCheckins.length})
         </button>
       </div>
 
-      {/* Filter tabs */}
       <div className="filter-tabs">
         {['pending', 'in_review', 'accepted', 'rejected', 'all'].map(f => (
           <button key={f} className={`filter-tab ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
-            {f === 'pending' ? '⏳ Pendientes' : f === 'in_review' ? '🔍 En Revisión' : f === 'accepted' ? '✅ Aprobados' : f === 'rejected' ? '❌ Rechazados' : '📋 Todos'}
+            {filterLabels[f]}
           </button>
         ))}
       </div>
 
-      {/* Zone indicator */}
       {activeTab === 'online' && (
         <div className="zone-header zone-online">
-          <span className="zone-icon">🌐</span>
+          <span className="zone-icon"><Icon name="globe" size="lg" /></span>
           <div><strong>Zona: Check-In Online</strong><p>Trámites realizados por viajeros desde la página web</p></div>
         </div>
       )}
       {activeTab === 'inperson' && (
         <div className="zone-header zone-inperson">
-          <span className="zone-icon">📝</span>
+          <span className="zone-icon"><Icon name="edit" size="lg" /></span>
           <div><strong>Zona: Trámites Presenciales</strong><p>Trámites registrados por funcionarios para viajeros en el paso fronterizo</p></div>
         </div>
       )}
 
-      {/* List */}
       {loading ? (
         <div className="loading">Cargando trámites...</div>
       ) : filteredList.length === 0 ? (
         <div className="card empty-state">
-          <span className="empty-icon">{filter === 'pending' ? '🎉' : '📭'}</span>
+          <Icon name={filter === 'pending' ? 'check' : 'inbox'} size="xl" className="empty-icon-svg" />
           <h3>{filter === 'pending' ? '¡No hay trámites pendientes!' : 'No hay resultados'}</h3>
           <p>Cambia el filtro o crea un nuevo trámite presencial.</p>
         </div>
@@ -251,11 +278,11 @@ function OfficialPanel() {
             <div key={checkin.localId || checkin.id} className={`card checkin-card official-card status-${checkin.status}`}>
               <div className="checkin-card-header">
                 <div className="checkin-type-badge">
-                  <span>{getTypeIcon(checkin.checkinType)}</span>
-                  <span>{getTypeLabel(checkin.checkinType)}</span>
+                  <CheckinTypeIcon type={checkin.checkinType} size="sm" />
+                  <span>{checkinTypeLabel(checkin.checkinType)}</span>
                 </div>
-                {checkin.source === 'inperson' && <span className="source-badge inperson">📝 Presencial</span>}
-                {(!checkin.source || checkin.source === 'online') && <span className="source-badge online">🌐 Online</span>}
+                {checkin.source === 'inperson' && <span className="source-badge inperson">Presencial</span>}
+                {(!checkin.source || checkin.source === 'online') && <span className="source-badge online">Online</span>}
                 <StatusBadge status={checkin.status} />
                 <span className="checkin-date">{formatDate(checkin.createdAt)}</span>
               </div>
@@ -268,29 +295,38 @@ function OfficialPanel() {
                   <span className="meta-item"><strong>Código:</strong> <code>{(checkin.localId || checkin.id)?.slice(0, 8).toUpperCase()}</code></span>
                 </div>
                 {checkin.checkinType === 'vehicle' && checkin.details?.patent && (
-                  <div className="checkin-detail">🚗 {checkin.details.brand} {checkin.details.model} — <strong>{checkin.details.patent}</strong>{checkin.details.vehicleType === 'diplomatic' && <span className="tag-diplomatic">🚩 Diplomático</span>}</div>
+                  <div className="checkin-detail">
+                    {checkin.details.brand} {checkin.details.model} — <strong>{checkin.details.patent}</strong>
+                    {checkin.details.vehicleType === 'diplomatic' && (
+                      <span className="tag-diplomatic">Diplomático</span>
+                    )}
+                  </div>
                 )}
                 {checkin.checkinType === 'minor' && (
-                  <div className="checkin-detail">👶 {checkin.details?.minorName || 'Menor'} — {checkin.details?.minorAccompaniedBy === 'both' ? 'Ambos padres' : checkin.details?.minorAccompaniedBy === 'one_parent' ? 'Un progenitor' : 'Sin compañía'}{checkin.details?.hasMinorAuthorization ? ' 📄 Con autorización' : ' ⚠️ Sin autorización'}</div>
+                  <div className="checkin-detail">
+                    {checkin.details?.minorName || 'Menor'} — {checkin.details?.minorAccompaniedBy === 'both' ? 'Ambos padres' : checkin.details?.minorAccompaniedBy === 'one_parent' ? 'Un progenitor' : 'Sin compañía'}
+                    {checkin.details?.hasMinorAuthorization ? ' — Con autorización' : ' — Sin autorización'}
+                  </div>
                 )}
                 {checkin.checkinType === 'pet' && (
-                  <div className="checkin-detail">🐾 {checkin.details?.petName || 'Mascota'} ({checkin.details?.petType}) — Vacunas: {checkin.details?.petHasVaccines ? '✅' : '❌'}</div>
+                  <div className="checkin-detail">
+                    {checkin.details?.petName || 'Mascota'} ({checkin.details?.petType}) — Vacunas: {yesNo(checkin.details?.petHasVaccines)}
+                  </div>
                 )}
-                {checkin.comments && <div className="checkin-detail comment">💬 {checkin.comments}</div>}
+                {checkin.comments && <div className="checkin-detail comment">{checkin.comments}</div>}
               </div>
 
               <div className="checkin-card-hint">
-                <span>👆 Haz clic en el trámite para ver detalles y procesarlo</span>
+                <span>Haz clic en el trámite para ver detalles y procesarlo</span>
               </div>
 
               <div className="checkin-card-footer">
-                {!checkin.synced && <span className="sync-badge pending">📴 Pendiente de sincronización</span>}
-                {checkin.processedBy && <span className="processed-by">👤 {checkin.processedBy}</span>}
-                {checkin.comment && <span className="official-comment">📌 {checkin.comment}</span>}
-                {/* PDI Status */}
+                {!checkin.synced && <span className="sync-badge pending">Pendiente de sincronización</span>}
+                {checkin.processedBy && <span className="processed-by">{checkin.processedBy}</span>}
+                {checkin.comment && <span className="official-comment">{checkin.comment}</span>}
                 {checkin.pdiReview?.status && (
                   <span className={`pdi-badge pdi-${checkin.pdiReview.status}`}>
-                    {checkin.pdiReview.status === 'cleared' ? '✅ PDI: Autorizado' : checkin.pdiReview.status === 'denied' ? '❌ PDI: Denegado' : '⚠️ PDI: Revisión'}
+                    {pdiBadgeLabel(checkin.pdiReview.status)}
                   </span>
                 )}
               </div>

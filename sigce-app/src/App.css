@@ -63,13 +63,13 @@
 .navbar-brand a {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: white;
   font-weight: 700;
   font-size: 1.2em;
   text-decoration: none;
 }
-.navbar-logo { font-size: 1.5em; }
+.navbar-logo-icon { color: white; opacity: 0.95; }
 .navbar-title { letter-spacing: 1px; }
 
 .navbar-links {
@@ -77,6 +77,9 @@
   gap: 8px;
 }
 .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: rgba(255,255,255,0.85);
   padding: 8px 16px;
   border-radius: var(--radius-sm);
@@ -291,12 +294,6 @@
   margin-bottom: 40px;
 }
 
-.role-hero-icon {
-  font-size: 3.5em;
-  display: block;
-  margin-bottom: 8px;
-}
-
 .role-hero h1 {
   color: var(--primary);
   font-size: 2.4em;
@@ -484,6 +481,122 @@
   color: white !important;
 }
 
+.navbar-guest-actions .btn-login-small {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Shared UI icons (SVG) */
+.ui-icon { flex-shrink: 0; vertical-align: middle; }
+.hero-icon-svg,
+.role-hero-icon-svg,
+.login-icon-svg,
+.traveler-home-icon-svg,
+.empty-icon-svg {
+  display: block;
+  margin: 0 auto 12px;
+  color: var(--primary);
+}
+.hero-icon-svg { color: white; opacity: 0.95; }
+.role-hero-icon-svg,
+.login-icon-svg { color: var(--primary); }
+.empty-icon-svg { color: var(--text-light); margin-bottom: 16px; }
+.page-title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.section-title-icon { color: var(--primary); }
+.confirmation-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--success);
+}
+.type-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--primary);
+}
+.role-card-icon-wrap,
+.action-icon-wrap,
+.info-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--primary);
+  border: 1px solid var(--border);
+}
+.role-card-icon-wrap {
+  width: 56px;
+  height: 56px;
+  margin-bottom: 12px;
+}
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  opacity: 0.7;
+}
+.stat-icon .ui-icon { width: 18px; height: 18px; }
+.user-avatar-icon { color: var(--primary); }
+.btn-theme {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+}
+.aduana-card-code,
+.aduana-big-code {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.aduana-card-code {
+  font-size: 1.8em;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.3);
+}
+.aduana-big-code {
+  font-size: 2em;
+  width: 72px;
+  height: 72px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.25);
+  flex-shrink: 0;
+}
+.checkin-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ========== DOCUMENTS ========== */
 .documents-section {
   margin-top: 20px;
@@ -491,9 +604,12 @@
   border-top: 1px solid var(--border);
 }
 
-.documents-section h3 {
+.documents-section h3,
+.documents-title {
   margin-bottom: 8px;
   font-size: 1.05em;
+  font-weight: 600;
+  color: var(--text);
 }
 
 .documents-hint {
@@ -535,9 +651,40 @@
   min-width: 0;
 }
 
-.document-icon {
-  font-size: 1.5em;
+.file-type-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--primary);
   flex-shrink: 0;
+}
+
+.file-type-icon-lg {
+  width: 24px;
+  height: 24px;
+}
+
+.document-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.doc-viewer-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
 }
 
 .document-info strong {
@@ -638,16 +785,21 @@
   border-radius: var(--radius-sm);
   background: var(--bg);
   color: var(--text);
-  font-size: 1.1em;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.15s;
+  padding: 0;
 }
 
 .doc-viewer-close:hover {
   background: var(--border);
+}
+
+.doc-viewer-close svg {
+  width: 18px;
+  height: 18px;
 }
 
 .doc-viewer-content {
@@ -895,7 +1047,6 @@
   text-align: center;
   padding: 40px;
 }
-.confirmation-icon { font-size: 4em; }
 .confirmation-details {
   background: #f8f9fa;
   border-radius: var(--radius-sm);
@@ -1223,7 +1374,6 @@
   text-align: center;
   padding: 60px 20px;
 }
-.empty-icon { font-size: 4em; display: block; margin-bottom: 16px; }
 .empty-state h3 { margin-bottom: 8px; }
 .empty-state p { color: var(--text-light); margin-bottom: 20px; }
 
@@ -1296,7 +1446,7 @@
   .step span { display: none; }
   .step-num { width: 28px; height: 28px; font-size: 0.8em; }
   .step-line { width: 20px; }
-  .aduana-card-icon { font-size: 2.5em; }
+  .aduana-card-code { font-size: 1.4em; width: 52px; height: 52px; }
 }
 
 /* ========== ANIMATIONS ========== */
@@ -1306,6 +1456,191 @@
   gap: 12px;
   margin-bottom: 16px;
 }
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.admin-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.admin-tab:hover { border-color: var(--primary); color: var(--primary); }
+.admin-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+.admin-dashboard { margin-bottom: 32px; }
+.admin-section-header { margin-bottom: 16px; }
+.admin-section-sub {
+  color: var(--text-light);
+  font-size: 0.9em;
+  margin-top: 4px;
+}
+.admin-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.admin-charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.admin-chart-card {
+  padding: 20px;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+.admin-chart-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1em;
+  margin: 0 0 16px;
+  color: var(--text);
+}
+.admin-chart-body { flex: 1; min-height: 180px; }
+
+.column-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 180px;
+  padding-top: 8px;
+}
+.column-chart-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+  height: 100%;
+}
+.column-chart-count {
+  font-size: 0.7em;
+  font-weight: 700;
+  color: var(--primary);
+  min-height: 14px;
+}
+.column-chart-bar-wrap {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.column-chart-bar {
+  width: 70%;
+  max-width: 36px;
+  background: linear-gradient(180deg, var(--primary-light, #2980b9), var(--primary));
+  border-radius: 4px 4px 0 0;
+  min-height: 0;
+  transition: height 0.3s ease;
+}
+.column-chart-label {
+  font-size: 0.65em;
+  color: var(--text-light);
+  margin-top: 6px;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.bar-chart { display: flex; flex-direction: column; gap: 10px; }
+.bar-chart-row {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) 2fr auto;
+  gap: 10px;
+  align-items: center;
+}
+.bar-chart-label {
+  font-size: 0.82em;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.bar-chart-track {
+  height: 10px;
+  background: var(--border);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.bar-chart-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease;
+  min-width: 2px;
+}
+.bar-chart-value {
+  font-size: 0.85em;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 24px;
+  text-align: right;
+}
+
+.donut-chart-layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+}
+.donut-chart-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.donut-chart-center {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+.donut-chart-center strong { font-size: 1.4em; color: var(--primary); }
+.donut-chart-center span { font-size: 0.7em; color: var(--text-light); text-transform: uppercase; }
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8em;
+  color: var(--text-light);
+}
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-dashboard-loading { padding: 40px 0; }
 
 .official-actions-bar {
   display: flex;
@@ -1478,7 +1813,6 @@
   margin-bottom: -40px;
 }
 .hero-content { max-width: 700px; margin: 0 auto; }
-.hero-icon { font-size: 4em; display: block; margin-bottom: 12px; }
 .hero-content h1 {
   font-size: 2.8em;
   font-weight: 800;
@@ -1503,6 +1837,10 @@
   z-index: 1;
 }
 .section-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   text-align: center;
   font-size: 1.5em;
   color: var(--text);
@@ -1548,11 +1886,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  position: relative;
-}
-.aduana-card-icon {
-  font-size: 3.5em;
-  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
 }
 
 .aduana-card-body {

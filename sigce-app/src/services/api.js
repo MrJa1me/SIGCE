@@ -184,3 +184,12 @@ export function formatFileSize(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
+
+export async function getAdminStats(days = 14) {
+  const res = await fetch(`${API_URL}/admin/stats?days=${days}`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'No se pudieron cargar las estadísticas');
+  }
+  return res.json();
+}

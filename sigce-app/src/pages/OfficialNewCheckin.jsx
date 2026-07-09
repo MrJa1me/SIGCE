@@ -4,6 +4,7 @@ import { useAuth } from '../App';
 import { BORDER_CROSSINGS, getBorderCrossing } from '../services/borderCrossings';
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
+import { Icon, CheckinTypeIcon } from '../components/icons';
 
 const initForm = {
   fullName: '',
@@ -13,17 +14,19 @@ const initForm = {
   phone: '',
   borderCrossing: '',
   checkinType: 'vehicle',
-  // Vehicle
   patent: '', brand: '', model: '', vehicleYear: '', vehicleType: 'particular',
-  // Minor
   minorName: '', minorRut: '', minorAccompaniedBy: 'both', hasMinorAuthorization: false,
-  // Pet
   petType: 'dog', petName: '', petBreed: '', petHasVaccines: false, petHasMicrochip: false,
-  // PDI
   documentType: 'ci', passportNumber: '', nationalityCountry: 'Chile', hasCriminalRecord: false, pdiNotes: '',
-  // General
   comments: '',
 };
+
+const CHECKIN_TYPES = [
+  { id: 'vehicle', label: 'Vehículo' },
+  { id: 'minor', label: 'Menor' },
+  { id: 'pet', label: 'Mascota' },
+  { id: 'general', label: 'General' },
+];
 
 function OfficialNewCheckin() {
   const { user, online } = useAuth();
@@ -82,7 +85,7 @@ function OfficialNewCheckin() {
       if (online) {
         try { await createCheckin(checkinData); } catch {}
       }
-      setSuccess(`✅ Trámite creado para ${form.fullName} en ${selectedAduana?.name || 'aduana seleccionada'}`);
+      setSuccess(`Trámite creado para ${form.fullName} en ${selectedAduana?.name || 'aduana seleccionada'}`);
       setForm(initForm);
       setStep(2);
     } catch (err) {
@@ -96,7 +99,9 @@ function OfficialNewCheckin() {
       <button className="btn-back" onClick={() => navigate('/oficial')}>← Volver al Panel</button>
 
       <div className="page-header">
-        <h2>📝 Nuevo Trámite Presencial</h2>
+        <h2 className="page-title-with-icon">
+          <Icon name="edit" size="md" /> Nuevo Trámite Presencial
+        </h2>
         <p>Registra manualmente el trámite de un viajero que llegó sin check-in anticipado</p>
       </div>
 
@@ -105,49 +110,46 @@ function OfficialNewCheckin() {
 
       {step === 2 ? (
         <div className="card" style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: '3em' }}>✅</div>
+          <div className="confirmation-icon-wrap">
+            <Icon name="check" size="xl" />
+          </div>
           <h3 style={{ margin: '12px 0' }}>Trámite Registrado Exitosamente</h3>
           <p>El viajero fue registrado como <strong>trámite presencial</strong> y marcado como aceptado.</p>
           <div className="form-actions" style={{ justifyContent: 'center', marginTop: 20 }}>
-            <button className="btn btn-primary" onClick={() => { setStep(1); setSuccess(''); }}>➕ Nuevo Trámite</button>
+            <button className="btn btn-primary" onClick={() => { setStep(1); setSuccess(''); }}>Nuevo Trámite</button>
             <button className="btn btn-secondary" onClick={() => navigate('/oficial')}>Volver al Panel</button>
           </div>
         </div>
       ) : (
         <div className="card">
           <form onSubmit={handleSubmit}>
-            {/* Aduana */}
             <div className="form-section">
-              <h3>🌎 Paso Fronterizo</h3>
+              <h3 className="page-title-with-icon"><Icon name="globe" size="sm" /> Paso Fronterizo</h3>
               <div className="form-group">
                 <select value={form.borderCrossing} onChange={f('borderCrossing')} required>
                   <option value="">— Selecciona paso fronterizo —</option>
                   {BORDER_CROSSINGS.map(bc => (
-                    <option key={bc.id} value={bc.id}>{bc.icon} {bc.name} — {bc.region}</option>
+                    <option key={bc.id} value={bc.id}>{bc.code} — {bc.name} ({bc.region})</option>
                   ))}
                 </select>
               </div>
               <div className="form-group">
                 <label>Tipo de Trámite</label>
                 <div className="type-row">
-                  {[
-                    { id: 'vehicle', icon: '🚗', label: 'Vehículo' },
-                    { id: 'minor', icon: '👶', label: 'Menor' },
-                    { id: 'pet', icon: '🐾', label: 'Mascota' },
-                    { id: 'general', icon: '📋', label: 'General' },
-                  ].map(t => (
+                  {CHECKIN_TYPES.map(t => (
                     <label key={t.id} className={`type-radio ${form.checkinType === t.id ? 'active' : ''}`}>
                       <input type="radio" name="checkinType" value={t.id} checked={form.checkinType === t.id} onChange={f('checkinType')} />
-                      <span>{t.icon} {t.label}</span>
+                      <span className="type-radio-label">
+                        <CheckinTypeIcon type={t.id} size="sm" /> {t.label}
+                      </span>
                     </label>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Datos del viajero */}
             <div className="form-section">
-              <h3>👤 Datos del Viajero</h3>
+              <h3 className="page-title-with-icon"><Icon name="user" size="sm" /> Datos del Viajero</h3>
               <div className="form-row">
                 <div className="form-group">
                   <label>Nombre Completo</label>
@@ -178,9 +180,8 @@ function OfficialNewCheckin() {
               </div>
             </div>
 
-            {/* PDI */}
             <div className="form-section">
-              <h3>🕵️ Control Migratorio — PDI</h3>
+              <h3 className="page-title-with-icon"><Icon name="shield" size="sm" /> Control Migratorio — PDI</h3>
               <div className="form-row">
                 <div className="form-group">
                   <label>Tipo Documento</label>
@@ -213,10 +214,9 @@ function OfficialNewCheckin() {
               </div>
             </div>
 
-            {/* Vehicle fields */}
             {form.checkinType === 'vehicle' && (
               <div className="form-section">
-                <h3>🚗 Vehículo</h3>
+                <h3 className="page-title-with-icon"><Icon name="vehicle" size="sm" /> Vehículo</h3>
                 <div className="form-row">
                   <div className="form-group">
                     <label>Patente</label>
@@ -249,7 +249,7 @@ function OfficialNewCheckin() {
 
             {form.checkinType === 'minor' && (
               <div className="form-section">
-                <h3>👶 Menor de Edad</h3>
+                <h3 className="page-title-with-icon"><Icon name="minor" size="sm" /> Menor de Edad</h3>
                 <div className="form-row">
                   <div className="form-group">
                     <label>Nombre del Menor</label>
@@ -281,7 +281,7 @@ function OfficialNewCheckin() {
 
             {form.checkinType === 'pet' && (
               <div className="form-section">
-                <h3>🐾 Mascota</h3>
+                <h3 className="page-title-with-icon"><Icon name="pet" size="sm" /> Mascota</h3>
                 <div className="form-row">
                   <div className="form-group">
                     <label>Tipo</label>
@@ -315,7 +315,7 @@ function OfficialNewCheckin() {
 
             {form.checkinType === 'general' && (
               <div className="form-section">
-                <h3>📋 Descripción</h3>
+                <h3 className="page-title-with-icon"><Icon name="general" size="sm" /> Descripción</h3>
                 <div className="form-group">
                   <textarea value={form.comments} onChange={f('comments')} rows="3" placeholder="Describe el trámite..." required />
                 </div>
@@ -324,7 +324,7 @@ function OfficialNewCheckin() {
 
             {form.checkinType !== 'general' && (
               <div className="form-section">
-                <h3>💬 Comentarios</h3>
+                <h3 className="page-title-with-icon"><Icon name="comment" size="sm" /> Comentarios</h3>
                 <div className="form-group">
                   <textarea value={form.comments} onChange={f('comments')} rows="2" placeholder="Notas adicionales..." />
                 </div>
@@ -334,7 +334,7 @@ function OfficialNewCheckin() {
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={() => navigate('/oficial')}>Cancelar</button>
               <button type="submit" className="btn btn-primary" disabled={submitting}>
-                {submitting ? 'Guardando...' : '✅ Registrar Trámite Presencial'}
+                {submitting ? 'Guardando...' : 'Registrar Trámite Presencial'}
               </button>
             </div>
           </form>

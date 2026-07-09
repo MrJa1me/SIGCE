@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { register as apiRegister } from '../services/api';
+import { Icon } from '../components/icons';
 
 function TravelerRegister() {
   const { login, online } = useAuth();
@@ -57,14 +58,14 @@ function TravelerRegister() {
     <div className="page-center">
       <div className="login-card login-card-wide">
         <div className="login-header">
-          <span className="login-icon">✨</span>
+          <Icon name="userPlus" size="xl" className="login-icon-svg" />
           <h1>Crear cuenta</h1>
           <p className="login-subtitle">Regístrate como viajero en SIGCE</p>
         </div>
 
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="alert alert-error">{error}</div>}
-          {!online && <div className="alert alert-warning">📴 Sin conexión — conéctate para registrarte</div>}
+          {!online && <div className="alert alert-warning">Sin conexión — conéctate para registrarte</div>}
 
           <div className="form-group">
             <label htmlFor="name">Nombre completo *</label>

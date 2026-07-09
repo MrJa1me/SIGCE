@@ -1,11 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Icon } from '../components/icons';
 
 function RoleSelect() {
   return (
     <div className="role-select-page">
       <div className="role-hero">
-        <span className="role-hero-icon">🛂</span>
+        <Icon name="logo" size="xl" className="role-hero-icon-svg" />
         <h1>SIGCE</h1>
         <p className="role-hero-subtitle">Sistema Integrado de Gestión de Comercio Exterior</p>
         <p className="role-hero-desc">Selecciona cómo deseas ingresar al sistema</p>
@@ -13,7 +14,7 @@ function RoleSelect() {
 
       <div className="role-cards">
         <Link to="/viajero" className="role-card role-card-traveler">
-          <span className="role-card-icon">🧳</span>
+          <span className="role-card-icon-wrap"><Icon name="traveler" size="lg" /></span>
           <h2>Soy Viajero</h2>
           <p>Realiza tu check-in anticipado en pasos fronterizos terrestres</p>
           <ul className="role-card-features">
@@ -25,7 +26,7 @@ function RoleSelect() {
         </Link>
 
         <Link to="/login" className="role-card role-card-staff">
-          <span className="role-card-icon">👤</span>
+          <span className="role-card-icon-wrap"><Icon name="user" size="lg" /></span>
           <h2>Soy Funcionario</h2>
           <p>Acceso para personal de aduana y administración</p>
           <ul className="role-card-features">
