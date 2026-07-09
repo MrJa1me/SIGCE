@@ -101,6 +101,15 @@ export async function getCheckin(id) {
   return mapCheckin(data);
 }
 
+export async function getVerifyCheckin(id) {
+  const res = await fetch(`${API_URL}/checkins/${encodeURIComponent(id)}/verify`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Trámite no encontrado');
+  }
+  return mapCheckin(await res.json());
+}
+
 export async function createCheckin(data) {
   const res = await fetch(`${API_URL}/checkins`, {
     method: 'POST',

@@ -5,6 +5,7 @@ import { getLocalCheckins } from '../services/offlineDb';
 import { getTravelerCheckins } from '../services/api';
 import StatusBadge from '../components/StatusBadge';
 import DocumentManager from '../components/DocumentManager';
+import CheckinQr from '../components/CheckinQr';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
 import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
 
@@ -125,6 +126,14 @@ function TravelerDashboard() {
               </div>
 
               <div className="checkin-card-body">
+                <CheckinQr
+                  checkinId={checkin.localId || checkin.id}
+                  initialStatus={checkin.status}
+                  size={140}
+                  live={online}
+                  showHint={false}
+                />
+
                 <div className="checkin-meta">
                   <span className="meta-item">
                     <strong>Código:</strong>
@@ -143,7 +152,13 @@ function TravelerDashboard() {
                     {checkin.details.brand} {checkin.details.model} — Patente: <strong>{checkin.details.patent}</strong>
                   </div>
                 )}
-                {checkin.comments && (
+                {getType(checkin) === 'general' && (checkin.details?.description || checkin.comments) && (
+                  <div className="checkin-detail">{checkin.details?.description || checkin.comments}</div>
+                )}
+                {checkin.comments && getType(checkin) !== 'general' && (
+                  <div className="checkin-detail comment">{checkin.comments}</div>
+                )}
+                {checkin.comments && getType(checkin) === 'general' && checkin.details?.description && (
                   <div className="checkin-detail comment">{checkin.comments}</div>
                 )}
 

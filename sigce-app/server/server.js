@@ -211,6 +211,28 @@ app.get('/api/checkins/pending', (req, res) => {
   res.json(pending.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)));
 });
 
+app.get('/api/checkins/:id/verify', (req, res) => {
+  const data = readData();
+  const checkin = data.checkins.find(c => c.id === req.params.id || c.localId === req.params.id);
+  if (!checkin) return res.status(404).json({ error: 'Trámite no encontrado' });
+  const ref = checkin.localId || checkin.id;
+  res.json({
+    id: checkin.id,
+    localId: checkin.localId,
+    code: String(ref).slice(0, 8).toUpperCase(),
+    userName: checkin.userName,
+    rut: checkin.rut,
+    nationality: checkin.nationality,
+    checkinType: checkin.checkinType,
+    borderCrossing: checkin.borderCrossing,
+    status: checkin.status,
+    details: checkin.details,
+    processedAt: checkin.processedAt,
+    processedBy: checkin.processedBy,
+    createdAt: checkin.createdAt,
+  });
+});
+
 app.get('/api/checkins/:id', (req, res) => {
   const data = readData();
   const checkin = data.checkins.find(c => c.id === req.params.id || c.localId === req.params.id);

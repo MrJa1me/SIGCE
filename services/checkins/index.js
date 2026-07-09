@@ -241,6 +241,39 @@ app.get('/api/checkins/by-rut/:rut', async (req, res) => {
   }
 });
 
+// Public verification payload for QR scans (live status)
+app.get('/api/checkins/:id/verify', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, local_id, user_name, rut, nationality, checkin_type, border_crossing,
+              status, details, processed_at, processed_by, pdi_review, created_at
+       FROM checkins WHERE id::text = $1 OR local_id = $1`,
+      [req.params.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Trámite no encontrado' });
+    const row = result.rows[0];
+    const ref = row.local_id || row.id;
+    res.json({
+      id: row.id,
+      local_id: row.local_id,
+      code: String(ref).slice(0, 8).toUpperCase(),
+      user_name: row.user_name,
+      rut: row.rut,
+      nationality: row.nationality,
+      checkin_type: row.checkin_type,
+      border_crossing: row.border_crossing,
+      status: row.status,
+      details: row.details,
+      processed_at: row.processed_at,
+      processed_by: row.processed_by,
+      pdi_review: row.pdi_review,
+      created_at: row.created_at,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // List documents for a check-in
 app.get('/api/checkins/:id/documents', async (req, res) => {
   try {

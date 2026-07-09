@@ -176,6 +176,14 @@ const PATHS = {
       <path d="M16 11v6M13 14h6" />
     </>
   ),
+  qr: (
+    <>
+      <rect x="4" y="4" width="6" height="6" rx="1" />
+      <rect x="14" y="4" width="6" height="6" rx="1" />
+      <rect x="4" y="14" width="6" height="6" rx="1" />
+      <path d="M14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" />
+    </>
+  ),
 };
 
 const SIZES = {

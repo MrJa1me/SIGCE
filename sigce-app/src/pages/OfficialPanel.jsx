@@ -188,7 +188,10 @@ function OfficialPanel() {
           </div>
         )}
         <div className="official-actions-bar">
-          <button className="btn btn-primary" onClick={() => navigate('/oficial/nuevo')}>
+          <button className="btn btn-primary" onClick={() => navigate('/oficial/escanear')}>
+            <Icon name="qr" size="sm" /> Control Fronterizo (QR)
+          </button>
+          <button className="btn btn-secondary" onClick={() => navigate('/oficial/nuevo')}>
             Nuevo Trámite Presencial
           </button>
           <span className="bar-hint">Para viajeros que llegaron sin check-in</span>
@@ -313,7 +316,14 @@ function OfficialPanel() {
                     {checkin.details?.petName || 'Mascota'} ({checkin.details?.petType}) — Vacunas: {yesNo(checkin.details?.petHasVaccines)}
                   </div>
                 )}
-                {checkin.comments && <div className="checkin-detail comment">{checkin.comments}</div>}
+                {checkin.checkinType === 'general' && (
+                  <div className="checkin-detail">
+                    {checkin.details?.description || checkin.comments || 'Trámite general'}
+                  </div>
+                )}
+                {checkin.comments && checkin.checkinType !== 'general' && (
+                  <div className="checkin-detail comment">{checkin.comments}</div>
+                )}
               </div>
 
               <div className="checkin-card-hint">

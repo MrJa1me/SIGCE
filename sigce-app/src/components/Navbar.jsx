@@ -33,9 +33,14 @@ function Navbar() {
           </Link>
         )}
         {user?.role === 'official' && (
-          <Link to="/oficial" className="nav-link">
-            <Icon name="user" size="sm" /> Panel Oficial
-          </Link>
+          <>
+            <Link to="/oficial" className="nav-link">
+              <Icon name="user" size="sm" /> Panel Oficial
+            </Link>
+            <Link to="/oficial/escanear" className="nav-link">
+              <Icon name="qr" size="sm" /> Escanear QR
+            </Link>
+          </>
         )}
         {user?.role === 'admin' && (
           <>
@@ -44,6 +49,9 @@ function Navbar() {
             </Link>
             <Link to="/oficial" className="nav-link">
               <Icon name="user" size="sm" /> Panel Oficial
+            </Link>
+            <Link to="/oficial/escanear" className="nav-link">
+              <Icon name="qr" size="sm" /> Escanear QR
             </Link>
           </>
         )}

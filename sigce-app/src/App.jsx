@@ -12,6 +12,8 @@ import TravelerCheckIn from './pages/TravelerCheckIn';
 import OfficialPanel from './pages/OfficialPanel';
 import OfficialDetail from './pages/OfficialDetail';
 import OfficialNewCheckin from './pages/OfficialNewCheckin';
+import OfficialQrScan from './pages/OfficialQrScan';
+import OfficialVerify from './pages/OfficialVerify';
 import AdminPanel from './pages/AdminPanel';
 import Navbar from './components/Navbar';
 import ConnectionStatus from './components/ConnectionStatus';
@@ -59,6 +61,7 @@ function App() {
       return <Navigate to="/login" replace />;
     }
     if (allowedRole && user.role !== allowedRole) {
+      if (allowedRole === 'official' && user.role === 'admin') return children;
       if (user.role === 'admin') return <Navigate to="/admin" replace />;
       if (user.role === 'official') return <Navigate to="/oficial" replace />;
       if (user.role === 'traveler') return <Navigate to="/pasos" replace />;
@@ -102,8 +105,10 @@ function App() {
             <Route path="/dashboard" element={<ProtectedRoute allowedRole="traveler"><TravelerDashboard /></ProtectedRoute>} />
             <Route path="/checkin" element={<ProtectedRoute allowedRole="traveler"><TravelerCheckIn /></ProtectedRoute>} />
             <Route path="/oficial" element={<ProtectedRoute allowedRole="official"><OfficialPanel /></ProtectedRoute>} />
-            <Route path="/oficial/:id" element={<ProtectedRoute allowedRole="official"><OfficialDetail /></ProtectedRoute>} />
+            <Route path="/oficial/escanear" element={<ProtectedRoute allowedRole="official"><OfficialQrScan /></ProtectedRoute>} />
+            <Route path="/oficial/verificar/:id" element={<ProtectedRoute allowedRole="official"><OfficialVerify /></ProtectedRoute>} />
             <Route path="/oficial/nuevo" element={<ProtectedRoute allowedRole="official"><OfficialNewCheckin /></ProtectedRoute>} />
+            <Route path="/oficial/:id" element={<ProtectedRoute allowedRole="official"><OfficialDetail /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute allowedRole="admin"><AdminPanel /></ProtectedRoute>} />
             <Route path="*" element={<div className="page-error"><h2>404 — Página no encontrada</h2><p>¿Te perdiste en la frontera?</p></div>} />
           </Routes>

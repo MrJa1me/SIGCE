@@ -218,11 +218,11 @@ function OfficialDetail() {
         {checkin.checkinType === 'general' && (
           <div className="detail-section">
             <h3 className="page-title-with-icon"><Icon name="general" size="sm" /> Trámite General</h3>
-            <p>{checkin.comments || 'Sin descripción'}</p>
+            <p>{checkin.details?.description || checkin.comments || 'Sin descripción'}</p>
           </div>
         )}
 
-        {checkin.comments && !['general'].includes(checkin.checkinType) && (
+        {checkin.comments && (checkin.checkinType !== 'general' || checkin.details?.description) && (
           <div className="detail-section">
             <h3 className="page-title-with-icon"><Icon name="comment" size="sm" /> Comentarios del Viajero</h3>
             <p>{checkin.comments}</p>

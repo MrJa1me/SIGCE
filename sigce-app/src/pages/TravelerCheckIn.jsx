@@ -4,6 +4,7 @@ import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
 import { BORDER_CROSSINGS } from '../services/borderCrossings';
 import StatusBadge from '../components/StatusBadge';
+import CheckinQr from '../components/CheckinQr';
 import { Icon, CheckinTypeIcon, checkinTypeLabel, checkinTypeTitle } from '../components/icons';
 
 const buildInitialForm = (user) => ({
@@ -28,6 +29,7 @@ const buildInitialForm = (user) => ({
   petHasVaccines: false,
   petHasMicrochip: false,
   borderCrossing: '',
+  generalDescription: '',
   comments: '',
 });
 
@@ -68,6 +70,8 @@ function TravelerCheckIn() {
       details.petBreed = form.petBreed;
       details.petHasVaccines = form.petHasVaccines;
       details.petHasMicrochip = form.petHasMicrochip;
+    } else if (form.checkinType === 'general') {
+      details.description = form.generalDescription.trim();
     }
 
     const checkinData = {
@@ -334,7 +338,16 @@ function TravelerCheckIn() {
                 <h3>Trámite General</h3>
                 <div className="form-group">
                   <label>Describe tu consulta o trámite</label>
-                  <textarea value={form.comments} onChange={e => updateField('comments', e.target.value)} rows="4" placeholder="Detalla el motivo de tu check-in..." required />
+                  <textarea
+                    id="general-description"
+                    name="generalDescription"
+                    autoComplete="off"
+                    value={form.generalDescription}
+                    onChange={e => updateField('generalDescription', e.target.value)}
+                    rows="4"
+                    placeholder="Detalla el motivo de tu check-in..."
+                    required
+                  />
                 </div>
               </div>
             )}
@@ -342,7 +355,15 @@ function TravelerCheckIn() {
             <div className="form-section">
               <h3>Comentarios Adicionales</h3>
               <div className="form-group">
-                <textarea value={form.comments} onChange={e => updateField('comments', e.target.value)} rows="2" placeholder="Información adicional para el funcionario..." />
+                <textarea
+                  id="checkin-comments"
+                  name="comments"
+                  autoComplete="off"
+                  value={form.comments}
+                  onChange={e => updateField('comments', e.target.value)}
+                  rows="2"
+                  placeholder="Información adicional para el funcionario..."
+                />
               </div>
             </div>
 
@@ -365,6 +386,11 @@ function TravelerCheckIn() {
           <p className="card-subtitle">Tu trámite ha sido registrado. Preséntate en aduana con tu código de confirmación.</p>
 
           <div className="confirmation-details">
+            <CheckinQr
+              checkinId={confirmation.localId || confirmation.id}
+              initialStatus={confirmation.status || 'pending'}
+              live={online}
+            />
             <div className="confirmation-code">
               <span className="code-label">Código de Confirmación</span>
               <span className="code-value">{confirmation.localId?.slice(0, 8).toUpperCase()}</span>

@@ -5,6 +5,7 @@ import { BORDER_CROSSINGS, getBorderCrossing } from '../services/borderCrossings
 import { saveCheckinLocally } from '../services/offlineDb';
 import { createCheckin } from '../services/api';
 import { Icon, CheckinTypeIcon } from '../components/icons';
+import CheckinQr from '../components/CheckinQr';
 
 const initForm = {
   fullName: '',
@@ -18,6 +19,7 @@ const initForm = {
   minorName: '', minorRut: '', minorAccompaniedBy: 'both', hasMinorAuthorization: false,
   petType: 'dog', petName: '', petBreed: '', petHasVaccines: false, petHasMicrochip: false,
   documentType: 'ci', passportNumber: '', nationalityCountry: 'Chile', hasCriminalRecord: false, pdiNotes: '',
+  generalDescription: '',
   comments: '',
 };
 
@@ -35,7 +37,7 @@ function OfficialNewCheckin() {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [createdCheckin, setCreatedCheckin] = useState(null);
 
   const f = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }));
   const c = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.checked }));
@@ -58,6 +60,8 @@ function OfficialNewCheckin() {
     } else if (form.checkinType === 'pet') {
       details.petType = form.petType; details.petName = form.petName; details.petBreed = form.petBreed;
       details.petHasVaccines = form.petHasVaccines; details.petHasMicrochip = form.petHasMicrochip;
+    } else if (form.checkinType === 'general') {
+      details.description = form.generalDescription.trim();
     }
     details.pdi = {
       documentType: form.documentType, passportNumber: form.passportNumber,
@@ -85,6 +89,7 @@ function OfficialNewCheckin() {
       if (online) {
         try { await createCheckin(checkinData); } catch {}
       }
+      setCreatedCheckin(checkinData);
       setSuccess(`Trámite creado para ${form.fullName} en ${selectedAduana?.name || 'aduana seleccionada'}`);
       setForm(initForm);
       setStep(2);
@@ -115,8 +120,15 @@ function OfficialNewCheckin() {
           </div>
           <h3 style={{ margin: '12px 0' }}>Trámite Registrado Exitosamente</h3>
           <p>El viajero fue registrado como <strong>trámite presencial</strong> y marcado como aceptado.</p>
+          {createdCheckin && (
+            <CheckinQr
+              checkinId={createdCheckin.localId || createdCheckin.id}
+              initialStatus={createdCheckin.status || 'accepted'}
+              live={online}
+            />
+          )}
           <div className="form-actions" style={{ justifyContent: 'center', marginTop: 20 }}>
-            <button className="btn btn-primary" onClick={() => { setStep(1); setSuccess(''); }}>Nuevo Trámite</button>
+            <button className="btn btn-primary" onClick={() => { setStep(1); setSuccess(''); setCreatedCheckin(null); }}>Nuevo Trámite</button>
             <button className="btn btn-secondary" onClick={() => navigate('/oficial')}>Volver al Panel</button>
           </div>
         </div>
@@ -317,19 +329,34 @@ function OfficialNewCheckin() {
               <div className="form-section">
                 <h3 className="page-title-with-icon"><Icon name="general" size="sm" /> Descripción</h3>
                 <div className="form-group">
-                  <textarea value={form.comments} onChange={f('comments')} rows="3" placeholder="Describe el trámite..." required />
+                  <textarea
+                    id="general-description"
+                    name="generalDescription"
+                    autoComplete="off"
+                    value={form.generalDescription}
+                    onChange={f('generalDescription')}
+                    rows="3"
+                    placeholder="Describe el trámite..."
+                    required
+                  />
                 </div>
               </div>
             )}
 
-            {form.checkinType !== 'general' && (
-              <div className="form-section">
-                <h3 className="page-title-with-icon"><Icon name="comment" size="sm" /> Comentarios</h3>
-                <div className="form-group">
-                  <textarea value={form.comments} onChange={f('comments')} rows="2" placeholder="Notas adicionales..." />
-                </div>
+            <div className="form-section">
+              <h3 className="page-title-with-icon"><Icon name="comment" size="sm" /> Comentarios{form.checkinType === 'general' ? ' (opcional)' : ''}</h3>
+              <div className="form-group">
+                <textarea
+                  id="checkin-comments"
+                  name="comments"
+                  autoComplete="off"
+                  value={form.comments}
+                  onChange={f('comments')}
+                  rows="2"
+                  placeholder="Notas adicionales..."
+                />
               </div>
-            )}
+            </div>
 
             <div className="form-actions">
               <button type="button" className="btn btn-secondary" onClick={() => navigate('/oficial')}>Cancelar</button>
