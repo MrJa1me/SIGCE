@@ -37,7 +37,7 @@ app.post('/api/login', async (req, res) => {
   try {
     await ensureSchema();
     const result = await pool.query(
-      'SELECT id, username, password, name, role, rut, email FROM users WHERE username = $1',
+      'SELECT id, username, password, name, role, rut, email, phone, nationality, assigned_border_crossing FROM users WHERE username = $1',
       [username]
     );
     if (result.rows.length === 0) {
@@ -60,6 +60,9 @@ app.post('/api/login', async (req, res) => {
       role: user.role,
       rut: user.rut,
       email: user.email,
+      phone: user.phone,
+      nationality: user.nationality,
+      assignedBorderCrossing: user.assigned_border_crossing,
     });
   } catch (err) {
     console.error('Login error:', err.message);

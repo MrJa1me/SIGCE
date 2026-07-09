@@ -8,14 +8,14 @@ import DocumentManager from '../components/DocumentManager';
 import StatusBadge from '../components/StatusBadge';
 import CheckinQr from '../components/CheckinQr';
 import CheckinStepBar from '../components/CheckinStepBar';
-import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
+import { computeValidUntil } from '../services/qrUtils';
 
 const buildInitialForm = (user) => ({
   fullName: user?.name || '',
   rut: user?.rut || '',
-  nationality: 'Chilena',
+  nationality: user?.nationality || 'Chilena',
   email: user?.email || '',
-  phone: '',
+  phone: user?.phone || '',
   checkinType: '',
   patent: '',
   brand: '',
@@ -110,6 +110,8 @@ function AduanaPage() {
     } else if (checkinType === 'general') {
       details.description = form.generalDescription.trim();
     }
+    const createdAt = new Date().toISOString();
+    details.validUntil = computeValidUntil(createdAt, checkinType, details);
 
     const checkinData = {
       localId: draftCheckinId || crypto.randomUUID(),
@@ -124,7 +126,7 @@ function AduanaPage() {
       status: 'pending',
       details,
       comments: form.comments,
-      createdAt: new Date().toISOString(),
+      createdAt,
       synced: false,
       version: 1,
     };
@@ -500,8 +502,14 @@ function AduanaPage() {
               <CheckinQr
                 checkinId={confirmation.localId || confirmation.id}
                 initialStatus={confirmation.status || 'pending'}
+                createdAt={confirmation.createdAt}
+                checkinType={checkinType}
+                details={confirmation.details}
+                travelerName={confirmation.userName}
+                crossingName={aduana.name}
                 live={online}
                 size={220}
+                showDownload
               />
             </div>
 

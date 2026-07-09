@@ -134,9 +134,15 @@ function TravelerDashboard() {
                   <CheckinQr
                     checkinId={checkin.localId || checkin.id}
                     initialStatus={checkin.status}
+                    createdAt={checkin.createdAt || checkin.created_at}
+                    checkinType={getType(checkin)}
+                    details={checkin.details}
+                    travelerName={checkin.userName}
+                    crossingName={resolveCrossingName(checkin.borderCrossing || checkin.border_crossing)}
                     size={160}
                     live={online}
                     showHint={false}
+                    showDownload
                   />
                 </details>
 

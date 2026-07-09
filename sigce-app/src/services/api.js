@@ -110,6 +110,26 @@ export async function getVerifyCheckin(id) {
   return mapCheckin(await res.json());
 }
 
+export async function getUserProfile(userId) {
+  const res = await fetch(`${API_URL}/users/${userId}/profile`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'No se pudo cargar el perfil');
+  }
+  return res.json();
+}
+
+export async function updateUserProfile(userId, body) {
+  const res = await fetch(`${API_URL}/users/${userId}/profile`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error al actualizar perfil');
+  return data;
+}
+
 export async function createCheckin(data) {
   const res = await fetch(`${API_URL}/checkins`, {
     method: 'POST',

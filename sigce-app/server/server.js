@@ -4,6 +4,10 @@ const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
 const {
+  computeValidUntil,
+  isCheckinExpired,
+} = require('../../services/checkins/validity');
+const {
   CROSSING_CATALOG,
   SEED_CROSSINGS,
   enrichCrossing,
@@ -50,13 +54,20 @@ function seedUsers() {
   const data = readData();
   if (data.users.length === 0) {
     data.users.push(
-      { id: 1, username: 'admin', password: 'admin123', name: 'Admin Aduanas', role: 'admin' },
-      { id: 2, username: 'oficial1', password: 'aduana2026', name: 'María González', role: 'official' },
-      { id: 3, username: 'oficial2', password: 'aduana2026', name: 'Carlos Muñoz', role: 'official' },
-      { id: 4, username: 'viajero1', password: 'viajero123', name: 'Juan Pérez', role: 'traveler' },
-      { id: 5, username: 'viajero2', password: 'viajero123', name: 'Ana Soto', role: 'traveler' }
+      { id: 1, username: 'admin', password: 'admin123', name: 'Admin Aduanas', role: 'admin', nationality: 'Chilena' },
+      { id: 2, username: 'oficial1', password: 'aduana2026', name: 'María González', role: 'official', assignedBorderCrossing: 'los-libertadores', nationality: 'Chilena' },
+      { id: 3, username: 'oficial2', password: 'aduana2026', name: 'Carlos Muñoz', role: 'official', assignedBorderCrossing: 'chacalluta', nationality: 'Chilena' },
+      { id: 4, username: 'viajero1', password: 'viajero123', name: 'Juan Pérez', role: 'traveler', rut: '12.345.678-9', phone: '+56911111111', nationality: 'Chilena', email: 'juan@email.cl' },
+      { id: 5, username: 'viajero2', password: 'viajero123', name: 'Ana Soto', role: 'traveler', nationality: 'Chilena' }
     );
     writeData(data);
+  } else {
+    let changed = false;
+    for (const u of data.users) {
+      if (u.username === 'oficial1' && !u.assignedBorderCrossing) { u.assignedBorderCrossing = 'los-libertadores'; changed = true; }
+      if (u.username === 'oficial2' && !u.assignedBorderCrossing) { u.assignedBorderCrossing = 'chacalluta'; changed = true; }
+    }
+    if (changed) writeData(data);
   }
 }
 seedUsers();
@@ -69,7 +80,40 @@ app.post('/api/login', (req, res) => {
   if (!user) {
     return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
   }
-  res.json({ id: user.id, username: user.username, name: user.name, role: user.role });
+  res.json({
+    id: user.id,
+    username: user.username,
+    name: user.name,
+    role: user.role,
+    rut: user.rut,
+    email: user.email,
+    phone: user.phone,
+    nationality: user.nationality,
+    assignedBorderCrossing: user.assignedBorderCrossing,
+  });
+});
+
+app.get('/api/users/:id/profile', (req, res) => {
+  const data = readData();
+  const user = data.users.find((u) => u.id === parseInt(req.params.id));
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  const { password, ...profile } = user;
+  res.json(profile);
+});
+
+app.put('/api/users/:id/profile', (req, res) => {
+  const data = readData();
+  const user = data.users.find((u) => u.id === parseInt(req.params.id));
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+  const { name, rut, email, phone, nationality } = req.body;
+  if (name) user.name = name.trim();
+  if (rut !== undefined) user.rut = rut?.trim() || '';
+  if (email !== undefined) user.email = email?.trim() || '';
+  if (phone !== undefined) user.phone = phone?.trim() || '';
+  if (nationality) user.nationality = nationality;
+  writeData(data);
+  const { password, ...profile } = user;
+  res.json(profile);
 });
 
 // ---------- User CRUD (Admin) ----------
@@ -87,7 +131,7 @@ app.get('/api/users/:id', (req, res) => {
 
 app.post('/api/users', (req, res) => {
   const data = readData();
-  const { username, password, name, role } = req.body;
+  const { username, password, name, role, assignedBorderCrossing } = req.body;
   if (!username || !password || !name || !role) {
     return res.status(400).json({ error: 'Todos los campos son requeridos' });
   }
@@ -95,7 +139,11 @@ app.post('/api/users', (req, res) => {
     return res.status(400).json({ error: 'El nombre de usuario ya existe' });
   }
   const maxId = data.users.reduce((max, u) => Math.max(max, u.id), 0);
-  const newUser = { id: maxId + 1, username, password, name, role };
+  const newUser = {
+    id: maxId + 1, username, password, name, role,
+    assignedBorderCrossing: assignedBorderCrossing || null,
+    nationality: 'Chilena',
+  };
   data.users.push(newUser);
   writeData(data);
   res.status(201).json(newUser);
@@ -116,6 +164,9 @@ app.put('/api/users/:id', (req, res) => {
   if (password) user.password = password;
   if (name) user.name = name;
   if (role) user.role = role;
+  if (req.body.assignedBorderCrossing !== undefined) {
+    user.assignedBorderCrossing = req.body.assignedBorderCrossing || null;
+  }
 
   writeData(data);
   res.json(user);
@@ -294,6 +345,18 @@ app.get('/api/checkins/:id/verify', (req, res) => {
   const checkin = data.checkins.find(c => c.id === req.params.id || c.localId === req.params.id);
   if (!checkin) return res.status(404).json({ error: 'Trámite no encontrado' });
   const ref = checkin.localId || checkin.id;
+  const validUntil = checkin.details?.validUntil || computeValidUntil(
+    checkin.createdAt,
+    checkin.checkinType,
+    checkin.details || {}
+  );
+  const expired = isCheckinExpired(validUntil);
+  const documentCount = (data.documents || []).filter(
+    (d) => d.checkinLocalId === ref || d.checkinId === checkin.id
+  ).length;
+  const alerts = [];
+  if (expired) alerts.push({ type: 'expired', message: 'Trámite vencido — el viajero debe renovar el check-in' });
+  if (documentCount === 0) alerts.push({ type: 'no_documents', message: 'Sin documentos adjuntos — solicitar cédula o autorizaciones' });
   res.json({
     id: checkin.id,
     localId: checkin.localId,
@@ -308,6 +371,11 @@ app.get('/api/checkins/:id/verify', (req, res) => {
     processedAt: checkin.processedAt,
     processedBy: checkin.processedBy,
     createdAt: checkin.createdAt,
+    validUntil,
+    isExpired: expired,
+    documentCount,
+    hasDocuments: documentCount > 0,
+    alerts,
   });
 });
 

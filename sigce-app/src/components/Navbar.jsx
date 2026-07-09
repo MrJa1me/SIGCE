@@ -37,9 +37,14 @@ function Navbar({ variant = 'traveler' }) {
               <Icon name="globe" size="sm" /> Pasos Fronterizos
             </Link>
             {user?.role === 'traveler' && (
-              <Link to="/dashboard" className="nav-link">
-                <Icon name="clipboard" size="sm" /> Mis Trámites
-              </Link>
+              <>
+                <Link to="/dashboard" className="nav-link">
+                  <Icon name="clipboard" size="sm" /> Mis Trámites
+                </Link>
+                <Link to="/perfil" className="nav-link">
+                  <Icon name="user" size="sm" /> Mi Perfil
+                </Link>
+              </>
             )}
           </>
         )}

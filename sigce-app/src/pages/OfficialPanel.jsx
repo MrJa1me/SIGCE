@@ -9,10 +9,13 @@ import { Icon, CheckinTypeIcon, checkinTypeLabel, yesNo, PDI_STATUS_LABELS } fro
 
 function OfficialPanel() {
   const { user, online } = useAuth();
-  const { resolveCrossingName, getBorderCrossing } = useBorderCrossings();
+  const { crossings, resolveCrossingName, getBorderCrossing } = useBorderCrossings();
   const navigate = useNavigate();
+  const assignedCrossing = user?.assignedBorderCrossing;
   const [checkins, setCheckins] = useState([]);
   const [filter, setFilter] = useState('pending');
+  const [crossingFilter, setCrossingFilter] = useState('all');
+  const [onlyMyCrossing, setOnlyMyCrossing] = useState(!!assignedCrossing);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
   const [stats, setStats] = useState({ pending: 0, accepted: 0, rejected: 0, review: 0 });
@@ -86,7 +89,14 @@ function OfficialPanel() {
     setActionLoading(null);
   };
 
-  const filteredList = checkins.filter(c => filter === 'all' || c.status === filter);
+  const filteredList = checkins
+    .filter((c) => filter === 'all' || c.status === filter)
+    .filter((c) => {
+      const crossing = c.borderCrossing || c.border_crossing;
+      if (onlyMyCrossing && assignedCrossing) return crossing === assignedCrossing;
+      if (crossingFilter !== 'all') return crossing === crossingFilter;
+      return true;
+    });
 
   const exportCSV = (list) => {
     const headers = ['Código', 'Viajero', 'RUT', 'Nacionalidad', 'Tipo', 'Paso Fronterizo', 'Aduana', 'Origen', 'Estado', 'Fecha Ingreso', 'Procesado Por', 'Funcionario RUT', 'Paso Asignado', 'Comentario', 'PDI Estado'];
@@ -188,6 +198,33 @@ function OfficialPanel() {
           <button className="btn btn-primary" onClick={() => navigate('/oficial/escanear')}>
             <Icon name="qr" size="sm" /> Control Fronterizo (QR)
           </button>
+          {assignedCrossing && (
+            <label className="official-only-mine">
+              <input
+                type="checkbox"
+                checked={onlyMyCrossing}
+                onChange={(e) => {
+                  setOnlyMyCrossing(e.target.checked);
+                  if (e.target.checked) setCrossingFilter('all');
+                }}
+              />
+              Solo mi aduana ({resolveCrossingName(assignedCrossing)})
+            </label>
+          )}
+          <div className="form-group official-crossing-filter">
+            <label htmlFor="crossing-filter">Paso fronterizo</label>
+            <select
+              id="crossing-filter"
+              value={onlyMyCrossing ? 'all' : crossingFilter}
+              disabled={onlyMyCrossing}
+              onChange={(e) => setCrossingFilter(e.target.value)}
+            >
+              <option value="all">Todos los pasos</option>
+              {crossings.map((bc) => (
+                <option key={bc.id} value={bc.id}>{bc.name}</option>
+              ))}
+            </select>
+          </div>
           <div className="export-actions">
             <button className="btn btn-secondary btn-sm" onClick={() => exportCSV(filteredList)}>
               Exportar CSV

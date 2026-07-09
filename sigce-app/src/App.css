@@ -2251,6 +2251,59 @@
   margin-bottom: 16px;
 }
 
+.checkin-qr-validity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.85em;
+  color: var(--primary);
+  margin: 8px 0;
+}
+.checkin-qr-validity.expired {
+  color: var(--danger);
+}
+.checkin-qr-download {
+  margin-top: 12px;
+}
+.official-only-mine {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9em;
+  color: var(--text);
+  cursor: pointer;
+}
+.official-crossing-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+.official-crossing-filter label {
+  font-size: 0.75em;
+  color: var(--text-light);
+}
+.official-crossing-filter select {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.verify-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.verify-alerts .alert {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.text-danger { color: var(--danger); }
+.traveler-profile-card { max-width: 640px; }
+
 /* ========== ADUANA SELECTION PAGE ========== */
 .aduana-select-page {
   max-width: 1200px;

@@ -1,4 +1,9 @@
 const express = require('express');
+const {
+  computeValidUntil,
+  isCheckinExpired,
+  resolveValidUntil,
+} = require('./validity');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
@@ -261,6 +266,19 @@ app.get('/api/checkins/:id/verify', async (req, res) => {
     if (result.rows.length === 0) return res.status(404).json({ error: 'Trámite no encontrado' });
     const row = result.rows[0];
     const ref = row.local_id || row.id;
+
+    const docRes = await pool.query(
+      `SELECT COUNT(*)::int AS count FROM checkin_documents
+       WHERE checkin_local_id = $1 OR checkin_id = $2`,
+      [row.local_id || req.params.id, row.id]
+    );
+    const documentCount = docRes.rows[0].count;
+    const validUntil = resolveValidUntil(row);
+    const expired = isCheckinExpired(validUntil);
+    const alerts = [];
+    if (expired) alerts.push({ type: 'expired', message: 'Trámite vencido — el viajero debe renovar el check-in' });
+    if (documentCount === 0) alerts.push({ type: 'no_documents', message: 'Sin documentos adjuntos — solicitar cédula o autorizaciones' });
+
     res.json({
       id: row.id,
       local_id: row.local_id,
@@ -276,6 +294,11 @@ app.get('/api/checkins/:id/verify', async (req, res) => {
       processed_by: row.processed_by,
       pdi_review: row.pdi_review,
       created_at: row.created_at,
+      valid_until: validUntil,
+      is_expired: expired,
+      document_count: documentCount,
+      has_documents: documentCount > 0,
+      alerts,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -379,18 +402,23 @@ app.get('/api/checkins/:id', async (req, res) => {
 app.post('/api/checkins', async (req, res) => {
   try {
     const body = req.body;
+    const details = { ...(body.details || {}) };
+    const createdAt = body.createdAt || new Date().toISOString();
+    if (!details.validUntil) {
+      details.validUntil = computeValidUntil(createdAt, body.checkinType || 'general', details);
+    }
     const result = await pool.query(
       `INSERT INTO checkins (local_id, user_id, user_name, rut, nationality, email, phone,
-        checkin_type, border_crossing, source, created_by, status, details, comments, version, synced_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW())
+        checkin_type, border_crossing, source, created_by, status, details, comments, version, synced_at, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,NOW(),$16)
        RETURNING *`,
       [
         body.localId || null, body.userId || null, body.userName || 'Visitante',
         body.rut || '', body.nationality || 'Chilena', body.email || '', body.phone || '',
         body.checkinType || 'general', body.borderCrossing || '',
         body.source || 'online', body.createdBy || null,
-        body.status || 'pending', JSON.stringify(body.details || {}),
-        body.comments || '', body.version || 1,
+        body.status || 'pending', JSON.stringify(details),
+        body.comments || '', body.version || 1, createdAt,
       ]
     );
     const created = result.rows[0];

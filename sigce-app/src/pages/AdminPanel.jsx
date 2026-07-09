@@ -3,6 +3,7 @@ import { useAuth } from '../App';
 import { Icon, ROLE_LABELS, roleIconName } from '../components/icons';
 import AdminDashboard from '../components/AdminDashboard';
 import AdminBorderCrossings from '../components/AdminBorderCrossings';
+import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import { getAdminStats } from '../services/api';
 
 const API_URL = '/api';
@@ -15,6 +16,7 @@ const ROLE_COLORS = {
 
 function AdminPanel() {
   const { online } = useAuth();
+  const { crossings, resolveCrossingName } = useBorderCrossings();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
@@ -23,7 +25,7 @@ function AdminPanel() {
   const [statsError, setStatsError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
-  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'traveler' });
+  const [form, setForm] = useState({ username: '', password: '', name: '', role: 'traveler', assignedBorderCrossing: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -65,7 +67,7 @@ function AdminPanel() {
 
   const openCreate = () => {
     setEditingUser(null);
-    setForm({ username: '', password: '', name: '', role: 'traveler' });
+    setForm({ username: '', password: '', name: '', role: 'traveler', assignedBorderCrossing: '' });
     setShowForm(true);
     setError('');
     setSuccess('');
@@ -73,7 +75,13 @@ function AdminPanel() {
 
   const openEdit = (user) => {
     setEditingUser(user);
-    setForm({ username: user.username, password: '', name: user.name, role: user.role });
+    setForm({
+      username: user.username,
+      password: '',
+      name: user.name,
+      role: user.role,
+      assignedBorderCrossing: user.assignedBorderCrossing || '',
+    });
     setShowForm(true);
     setError('');
     setSuccess('');
@@ -87,7 +95,7 @@ function AdminPanel() {
 
     try {
       if (editingUser) {
-        const body = { name: form.name, role: form.role };
+        const body = { name: form.name, role: form.role, assignedBorderCrossing: form.assignedBorderCrossing || null };
         if (form.username) body.username = form.username;
         if (form.password) body.password = form.password;
 
@@ -105,7 +113,13 @@ function AdminPanel() {
         const res = await fetch(`${API_URL}/users`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
+          body: JSON.stringify({
+            username: form.username,
+            password: form.password,
+            name: form.name,
+            role: form.role,
+            assignedBorderCrossing: form.role === 'official' ? form.assignedBorderCrossing || null : null,
+          }),
         });
         if (!res.ok) {
           const err = await res.json();
@@ -251,6 +265,20 @@ function AdminPanel() {
                     </select>
                   </div>
                 </div>
+                {(form.role === 'official' || form.role === 'admin') && (
+                  <div className="form-group">
+                    <label>Paso fronterizo asignado {form.role === 'official' ? '(funcionario)' : '(opcional)'}</label>
+                    <select
+                      value={form.assignedBorderCrossing}
+                      onChange={(e) => setForm((f) => ({ ...f, assignedBorderCrossing: e.target.value }))}
+                    >
+                      <option value="">— Sin asignar / todos —</option>
+                      {crossings.map((bc) => (
+                        <option key={bc.id} value={bc.id}>{bc.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="form-actions">
                   <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>Cancelar</button>
                   <button type="submit" className="btn btn-primary" disabled={actionLoading}>
@@ -272,6 +300,7 @@ function AdminPanel() {
                     <th>Nombre</th>
                     <th>Usuario</th>
                     <th>Rol</th>
+                    <th>Paso asignado</th>
                     <th>Contraseña</th>
                     <th>Acciones</th>
                   </tr>
@@ -291,7 +320,8 @@ function AdminPanel() {
                           <Icon name={roleIconName(u.role)} size="xs" /> {ROLE_LABELS[u.role] || u.role}
                         </span>
                       </td>
-                      <td><code>{u.password}</code></td>
+                      <td>{u.assignedBorderCrossing ? resolveCrossingName(u.assignedBorderCrossing) : '—'}</td>
+                      <td><code>{u.password || '—'}</code></td>
                       <td className="actions-cell">
                         <button className="btn btn-sm btn-secondary" onClick={() => openEdit(u)} disabled={!online} title="Editar">
                           <Icon name="edit" size="sm" />

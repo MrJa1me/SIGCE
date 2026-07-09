@@ -65,6 +65,19 @@ async function runMigrations() {
     }
     console.log('📦 Border crossings seeded:', SEED_CROSSINGS.length);
   }
+
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS nationality VARCHAR(50) DEFAULT 'Chilena'`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_border_crossing VARCHAR(50)`);
+
+  await pool.query(`
+    UPDATE users SET assigned_border_crossing = 'los-libertadores'
+    WHERE username = 'oficial1' AND assigned_border_crossing IS NULL
+  `);
+  await pool.query(`
+    UPDATE users SET assigned_border_crossing = 'chacalluta'
+    WHERE username = 'oficial2' AND assigned_border_crossing IS NULL
+  `);
 }
 
 runMigrations().catch((err) => console.error('Migration error:', err.message));
@@ -176,11 +189,83 @@ app.delete('/api/admin/border-crossings/:id', async (req, res) => {
 });
 
 
+function mapUserProfile(row) {
+  return {
+    id: row.id,
+    username: row.username,
+    name: row.name,
+    role: row.role,
+    rut: row.rut,
+    email: row.email,
+    phone: row.phone,
+    nationality: row.nationality,
+    assignedBorderCrossing: row.assigned_border_crossing,
+  };
+}
+
+// Traveler / user profile
+app.get('/api/users/:id/profile', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, username, name, role, rut, email, phone, nationality, assigned_border_crossing
+       FROM users WHERE id = $1`,
+      [parseInt(req.params.id)]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json(mapUserProfile(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/users/:id/profile', async (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { name, rut, email, phone, nationality } = req.body;
+
+    if (rut) {
+      const rutExists = await pool.query(
+        'SELECT id FROM users WHERE rut = $1 AND id != $2',
+        [rut.trim(), userId]
+      );
+      if (rutExists.rows.length > 0) {
+        return res.status(400).json({ error: 'Este RUT ya está registrado por otro usuario' });
+      }
+    }
+
+    const result = await pool.query(
+      `UPDATE users SET
+        name = COALESCE($1, name),
+        rut = COALESCE($2, rut),
+        email = COALESCE($3, email),
+        phone = COALESCE($4, phone),
+        nationality = COALESCE($5, nationality)
+       WHERE id = $6
+       RETURNING id, username, name, role, rut, email, phone, nationality, assigned_border_crossing`,
+      [
+        name?.trim() || null,
+        rut?.trim() || null,
+        email?.trim() || null,
+        phone?.trim() || null,
+        nationality?.trim() || null,
+        userId,
+      ]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json(mapUserProfile(result.rows[0]));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // List all users
 app.get('/api/users', async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, username, name, role FROM users ORDER BY id');
-    res.json(result.rows);
+    const result = await pool.query(
+      `SELECT id, username, password, name, role, rut, email, phone, nationality, assigned_border_crossing
+       FROM users ORDER BY id`
+    );
+    res.json(result.rows.map((r) => ({ ...mapUserProfile(r), password: r.password })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -190,11 +275,12 @@ app.get('/api/users', async (req, res) => {
 app.get('/api/users/:id', async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, username, password, name, role FROM users WHERE id = $1',
+      'SELECT id, username, password, name, role, rut, email, phone, nationality, assigned_border_crossing FROM users WHERE id = $1',
       [parseInt(req.params.id)]
     );
     if (result.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    res.json({ ...mapUserProfile(row), password: row.password });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -203,7 +289,7 @@ app.get('/api/users/:id', async (req, res) => {
 // Create user
 app.post('/api/users', async (req, res) => {
   try {
-    const { username, password, name, role } = req.body;
+    const { username, password, name, role, assignedBorderCrossing } = req.body;
     if (!username || !password || !name || !role) {
       return res.status(400).json({ error: 'Todos los campos son requeridos' });
     }
@@ -214,10 +300,12 @@ app.post('/api/users', async (req, res) => {
     }
 
     const result = await pool.query(
-      'INSERT INTO users (username, password, name, role) VALUES ($1,$2,$3,$4) RETURNING id, username, name, role',
-      [username, password, name, role]
+      `INSERT INTO users (username, password, name, role, assigned_border_crossing)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id, username, name, role, rut, email, phone, nationality, assigned_border_crossing`,
+      [username, password, name, role, assignedBorderCrossing || null]
     );
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(mapUserProfile(result.rows[0]));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -226,7 +314,7 @@ app.post('/api/users', async (req, res) => {
 // Update user
 app.put('/api/users/:id', async (req, res) => {
   try {
-    const { username, password, name, role } = req.body;
+    const { username, password, name, role, assignedBorderCrossing } = req.body;
     const userId = parseInt(req.params.id);
 
     const existing = await pool.query('SELECT id FROM users WHERE username = $1 AND id != $2', [username, userId]);
@@ -242,16 +330,20 @@ app.put('/api/users/:id', async (req, res) => {
     if (password) { updates.push(` password = $${params.length + 1}`); params.push(password); }
     if (name) { updates.push(` name = $${params.length + 1}`); params.push(name); }
     if (role) { updates.push(` role = $${params.length + 1}`); params.push(role); }
+    if (assignedBorderCrossing !== undefined) {
+      updates.push(` assigned_border_crossing = $${params.length + 1}`);
+      params.push(assignedBorderCrossing || null);
+    }
 
     if (updates.length === 0) return res.status(400).json({ error: 'Sin campos para actualizar' });
 
     sql += updates.join(',');
-    sql += ` WHERE id = $${params.length + 1} RETURNING id, username, name, role`;
+    sql += ` WHERE id = $${params.length + 1} RETURNING id, username, name, role, rut, email, phone, nationality, assigned_border_crossing`;
     params.push(userId);
 
     const result = await pool.query(sql, params);
     if (result.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
-    res.json(result.rows[0]);
+    res.json(mapUserProfile(result.rows[0]));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

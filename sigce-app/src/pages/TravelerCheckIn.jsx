@@ -7,14 +7,14 @@ import StatusBadge from '../components/StatusBadge';
 import CheckinQr from '../components/CheckinQr';
 import DocumentManager from '../components/DocumentManager';
 import CheckinStepBar from '../components/CheckinStepBar';
-import { Icon, CheckinTypeIcon, checkinTypeLabel, checkinTypeTitle } from '../components/icons';
+import { computeValidUntil } from '../services/qrUtils';
 
 const buildInitialForm = (user) => ({
   fullName: user?.name || '',
   rut: user?.rut || '',
-  nationality: 'Chilena',
+  nationality: user?.nationality || 'Chilena',
   email: user?.email || '',
-  phone: '',
+  phone: user?.phone || '',
   checkinType: 'vehicle',
   patent: '',
   brand: '',
@@ -89,6 +89,8 @@ function TravelerCheckIn() {
     } else if (form.checkinType === 'general') {
       details.description = form.generalDescription.trim();
     }
+    const createdAt = new Date().toISOString();
+    details.validUntil = computeValidUntil(createdAt, form.checkinType, details);
 
     const checkinData = {
       localId: draftCheckinId || crypto.randomUUID(),
@@ -103,7 +105,7 @@ function TravelerCheckIn() {
       status: 'pending',
       details,
       comments: form.comments,
-      createdAt: new Date().toISOString(),
+      createdAt,
       synced: false,
       version: 1,
     };
@@ -453,8 +455,14 @@ function TravelerCheckIn() {
             <CheckinQr
               checkinId={confirmation.localId || confirmation.id}
               initialStatus={confirmation.status || 'pending'}
+              createdAt={confirmation.createdAt}
+              checkinType={confirmation.checkinType}
+              details={confirmation.details}
+              travelerName={confirmation.userName}
+              crossingName={resolveCrossingName(confirmation.borderCrossing)}
               live={online}
               size={220}
+              showDownload
             />
           </div>
 

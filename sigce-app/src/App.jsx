@@ -13,7 +13,7 @@ import OfficialPanel from './pages/OfficialPanel';
 import OfficialDetail from './pages/OfficialDetail';
 import OfficialQrScan from './pages/OfficialQrScan';
 import OfficialVerify from './pages/OfficialVerify';
-import AdminPanel from './pages/AdminPanel';
+import TravelerProfile from './pages/TravelerProfile';
 import AppShell from './components/AppShell';
 import { BorderCrossingsProvider } from './context/BorderCrossingsContext';
 import { startPeriodicSync, stopPeriodicSync, isOnline, onNetworkChange } from './services/syncService';
@@ -36,6 +36,14 @@ function App() {
   const login = (userData) => {
     setUser(userData);
     sessionStorage.setItem('sigce_user', JSON.stringify(userData));
+  };
+
+  const updateUser = (partial) => {
+    setUser((prev) => {
+      const next = { ...prev, ...partial };
+      sessionStorage.setItem('sigce_user', JSON.stringify(next));
+      return next;
+    });
   };
 
   const logout = () => {
@@ -82,7 +90,7 @@ function App() {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, online, syncStatus }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, online, syncStatus }}>
       <BorderCrossingsProvider>
       <AppShell syncStatus={syncStatus}>
         <Routes>
@@ -95,6 +103,7 @@ function App() {
           <Route path="/pasos" element={<AduanaSelect />} />
           <Route path="/aduana/:id" element={<AduanaPage />} />
           <Route path="/dashboard" element={<ProtectedRoute allowedRole="traveler"><TravelerDashboard /></ProtectedRoute>} />
+          <Route path="/perfil" element={<ProtectedRoute allowedRole="traveler"><TravelerProfile /></ProtectedRoute>} />
           <Route path="/checkin" element={<ProtectedRoute allowedRole="traveler"><TravelerCheckIn /></ProtectedRoute>} />
           <Route path="/oficial" element={<ProtectedRoute allowedRole="official"><OfficialPanel /></ProtectedRoute>} />
           <Route path="/oficial/escanear" element={<ProtectedRoute allowedRole="official"><OfficialQrScan /></ProtectedRoute>} />

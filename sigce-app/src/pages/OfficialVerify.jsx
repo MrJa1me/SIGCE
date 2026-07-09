@@ -7,7 +7,7 @@ import { useBorderCrossings } from '../context/BorderCrossingsContext';
 import CheckinQr from '../components/CheckinQr';
 import StatusBadge from '../components/StatusBadge';
 import { Icon, CheckinTypeIcon, checkinTypeLabel } from '../components/icons';
-import { BORDER_STATUS, formatCheckinCode } from '../services/qrUtils';
+import { BORDER_STATUS, formatCheckinCode, formatValidUntil, isCheckinExpired } from '../services/qrUtils';
 
 function OfficialVerify() {
   const { id } = useParams();
@@ -118,12 +118,34 @@ function OfficialVerify() {
   const crossing = getBorderCrossing(checkin.borderCrossing || checkin.border_crossing);
   const statusInfo = BORDER_STATUS[checkin.status] || BORDER_STATUS.pending;
   const checkinType = checkin.checkinType || checkin.checkin_type;
+  const validUntil = checkin.validUntil || checkin.valid_until || checkin.details?.validUntil;
+  const expired = checkin.isExpired ?? checkin.is_expired ?? isCheckinExpired(validUntil);
+  const docCount = checkin.documentCount ?? checkin.document_count ?? 0;
+  const hasDocuments = checkin.hasDocuments ?? checkin.has_documents ?? docCount > 0;
+  const alerts = checkin.alerts || [];
+  if (expired && !alerts.some((a) => a.type === 'expired')) {
+    alerts.unshift({ type: 'expired', message: 'Trámite vencido — solicitar nuevo check-in' });
+  }
+  if (!hasDocuments && !alerts.some((a) => a.type === 'no_documents')) {
+    alerts.push({ type: 'no_documents', message: 'Sin documentos adjuntos — verificar en ventanilla' });
+  }
 
   return (
     <div className="page-container">
       <button type="button" className="btn-back" onClick={() => navigate('/oficial/escanear')}>
         ← Escanear otro QR
       </button>
+
+      {alerts.length > 0 && (
+        <div className="verify-alerts">
+          {alerts.map((alert) => (
+            <div key={alert.type} className={`alert ${alert.type === 'expired' ? 'alert-error' : 'alert-warning'}`}>
+              <Icon name={alert.type === 'expired' ? 'x' : 'file'} size="sm" />
+              {alert.message}
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className={`card border-status-banner ${statusInfo.className}`}>
         <div className="border-status-icon">
@@ -144,6 +166,11 @@ function OfficialVerify() {
           <CheckinQr
             checkinId={checkinId}
             initialStatus={checkin.status}
+            createdAt={checkin.createdAt || checkin.created_at}
+            checkinType={checkinType}
+            details={checkin.details}
+            travelerName={checkin.userName || checkin.user_name}
+            crossingName={crossing?.name}
             live={online}
             showHint={false}
           />
@@ -167,6 +194,14 @@ function OfficialVerify() {
                   <><span className="aduana-card-code">{crossing.code}</span> {crossing.name}</>
                 ) : (checkin.borderCrossing || checkin.border_crossing || '—')}
               </strong>
+            </div>
+            <div>
+              <span>Válido hasta</span>
+              <strong className={expired ? 'text-danger' : ''}>{formatValidUntil(validUntil)}</strong>
+            </div>
+            <div>
+              <span>Documentos</span>
+              <strong>{hasDocuments ? 'Adjuntos' : 'Sin documentos'}</strong>
             </div>
             <div><span>Estado</span><strong><StatusBadge status={checkin.status} /></strong></div>
             {checkin.processedBy && (
