@@ -13,6 +13,7 @@ import OfficialPanel from './pages/OfficialPanel';
 import OfficialDetail from './pages/OfficialDetail';
 import OfficialQrScan from './pages/OfficialQrScan';
 import OfficialVerify from './pages/OfficialVerify';
+import AdminPanel from './pages/AdminPanel';
 import TravelerProfile from './pages/TravelerProfile';
 import AppShell from './components/AppShell';
 import { BorderCrossingsProvider } from './context/BorderCrossingsContext';
